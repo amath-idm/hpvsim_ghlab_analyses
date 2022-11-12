@@ -68,6 +68,7 @@ def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
     ys = sc.findinds(sim.results['year'],2023)[0]
     ye = sc.findinds(sim.results['year'],2060)[0]
     base_cancers = sim.results['total_cancers'][ys:ye].sum()
+    base_cin_treatments = sim.results['new_cin_treatments'][ys:ye].sum()
 
     # Set up iteration arguments
     ikw = []
@@ -100,7 +101,7 @@ def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
 
         df = pd.DataFrame()
         df['cancers_averted'] = np.array([base_cancers - sim.results['total_cancers'][ys:ye].sum()])
-        df['new_cin_treatments'] = np.array(sim.results['new_cin_treatments'][ys:ye].sum())
+        df['new_cin_treatments'] = np.array([sim.results['new_cin_treatments'][ys:ye].sum()-base_cin_treatments])
         df['location'] = [location]
         df['progression'] = 'linear' if ccuts[i_ccs] else 'fast'
         df['tx_vx_scen'] = [tx_vx_scen]
