@@ -96,16 +96,39 @@ def get_screen_intvs(location, screen_scen=None, product=None, start_year=2020, 
     return st_intvs
 
 
-def get_mv_intvs(dose1=None, dose2=None, routine_coverage=None, # Things that must be supplied
-                 dose2_uptake=0.8, intro_year=2030, routine_age=None): # Can be omitted
+def get_mv_intvs(dose1=None, dose2=None, campaign_coverage=None, routine_coverage=None, # Things that must be supplied
+                 campaign_years=None, campaign_age=None, dose2_uptake=0.8, intro_year=2030, routine_age=None): # Can be omitted
     ''' Get mass txvx interventions'''
 
     # Handle inputs
-    if routine_age is None: routine_age = [25,50]
+    if campaign_years is None: campaign_years = [intro_year]
+    if campaign_age is None: campaign_age = [25, 50]
+    if routine_age is None: routine_age = [25, 26]
 
+    # Eligibility
     first_dose_eligible = lambda sim: (sim.people.txvx_doses == 0)
     second_dose_eligible = lambda sim: (sim.people.txvx_doses == 1) & (
             sim.t > (sim.people.date_tx_vaccinated + 0.5 / sim['dt']))
+
+
+     # Campaign txvx
+    campaign_txvx_dose1 = hpv.campaign_txvx(
+        prob=campaign_coverage,
+        years=campaign_years,
+        age_range=campaign_age,
+        product=dose1,
+        eligibility=first_dose_eligible,
+        label='campaign txvx'
+    )
+
+    campaign_txvx_dose2 = hpv.campaign_txvx(
+        prob=dose2_uptake,
+        years=campaign_years,
+        age_range=campaign_age,
+        product=dose2,
+        eligibility=second_dose_eligible,
+        label='campaign txvx 2nd dose'
+    )
 
     routine_txvx_dose1 = hpv.routine_txvx(
         prob=routine_coverage,
@@ -125,7 +148,7 @@ def get_mv_intvs(dose1=None, dose2=None, routine_coverage=None, # Things that mu
         label='routine txvx 2nd dose'
     )
 
-    mv_intvs = [routine_txvx_dose1, routine_txvx_dose2]
+    mv_intvs = [campaign_txvx_dose1, campaign_txvx_dose2, routine_txvx_dose1, routine_txvx_dose2]
 
     return mv_intvs
 
@@ -185,7 +208,7 @@ def get_tnv_intvs(dose1=None, dose2=None, campaign_coverage=None, routine_covera
     return tnv_intvs
 
 
-def get_txvx_intvs(location=None, use_case=None, indication=None, txvx_prods=None, intro_year=2030):
+def get_txvx_intvs(use_case=None, indication=None, txvx_prods=None, intro_year=2030):
     ''' Get txvx interventions'''
 
     if indication is not None:
@@ -202,10 +225,11 @@ def get_txvx_intvs(location=None, use_case=None, indication=None, txvx_prods=Non
     # Values taken from IPM analysis, no longer used
     # campaign_coverage   = {'india': 0.765, 'nigeria':0.5695, 'tanzania':0.765}
     # routine_coverage    = {'india': 0.765, 'nigeria':0.5695, 'tanzania':0.765}
-    common_args = dict(dose1=dose1, dose2=dose2, dose2_uptake=0.8,
-                       routine_coverage=0.7, intro_year=intro_year)
+    common_args = dict(dose1=dose1, dose2=dose2, campaign_age=[25, 50], dose2_uptake=0.8,
+                       campaign_coverage=0.7, routine_coverage=0.7,
+                       intro_year=2030, routine_age=[25, 26])
     if use_case == 'mass_vaccination':
-        common_args = sc.mergedicts(common_args, {'routine_age':[25,50]})
+        common_args = sc.mergedicts(common_args, {'routine_age':[25,26]})
         intvs = get_mv_intvs(**common_args)
     elif use_case == 'test_and_vaccinate':
         common_args = sc.mergedicts(common_args, {'campaign_coverage':0.7})
@@ -287,3 +311,29 @@ def make_txvx_indication(indication='lesion_regression'):
     txvx_prods = [txvx1 ,txvx2]
 
     return txvx_prods
+
+
+def make_AVE(sens=None, spec=None):
+    ''' Get AVE parameters '''
+
+    basedf = pd.read_csv('dx_pars.csv')
+    lo_grade = ['precin', 'latent', 'cin1']  # No lesions or low grade lesions (a specificity test will count these as negative)
+    hi_grade = ['cin2', 'cin3', 'cancerous']  # High grade lesions (a sensitive test will count these as positive)
+
+    # Randomly perturb the test positivity values
+    if sens is None: sens = np.random.uniform(0, 1)
+    if spec is None: spec = np.random.uniform(0, 1)
+
+    ave_spec = basedf.loc[(basedf.state.isin(lo_grade)) & (basedf.result == 'negative')].copy()
+    ave_sens = basedf.loc[(basedf.state.isin(hi_grade)) & (basedf.result == 'positive')].copy()
+    ave_fpr = basedf.loc[(basedf.state.isin(lo_grade)) & (basedf.result == 'positive')].copy()
+    ave_fnr = basedf.loc[(basedf.state.isin(hi_grade)) & (basedf.result == 'negative')].copy()
+    ave_spec.probability = spec
+    ave_sens.probability = sens
+    ave_fpr.probability = 1-spec
+    ave_fnr.probability = 1-sens
+
+    # Make the ave product
+    ave = hpv.dx(pd.concat([ave_spec, ave_fpr, ave_sens, ave_fnr]), hierarchy=['positive', 'negative'])
+
+    return [ave]
