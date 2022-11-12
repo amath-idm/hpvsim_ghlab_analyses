@@ -607,52 +607,22 @@ def plot_scens(locations=None, background_scens=None, tx_vx_scens=None, progress
 
     return
 
-
-def make_msims_sweeps(sims, use_mean=True, save_msims=False):
-    '''
-    Take a slice of sims and turn it into a multisim 
-    '''
-    
-    msim = hpv.MultiSim(sims)
-    msim.reduce(use_mean=use_mean)
-    i_ccs, draw, i_s = sims[0].meta.inds
-    for s,sim in enumerate(sims): # Check that everything except seed matches
-        assert i_ccs == sim.meta.inds[0]
-        assert draw == sim.meta.inds[1]
-        assert (s==0) or i_s != sim.meta.inds[2]
-    msim.meta = sc.objdict()
-    msim.meta.inds = [i_ccs, draw]
-    msim.meta.eff_vals = sc.dcp(sims[0].meta.eff_vals)
-    msim.meta.vals = sc.dcp(sims[0].meta.vals)
-    msim.meta.vals.pop('seed')
-    print(f'Processing multisim {msim.meta.vals.values()}...')
-
-    if save_msims: # Generates a lot of files!
-        id_str = '_'.join([str(i) for i in msim.meta.inds])
-        msimfile = f'{resfolder}/final_msim{id_str}.msim'
-        msim.save(msimfile)
-
-    return msim
-
-
-def plot_sweeps(locations=None, tx_vx_scen='mass_vaccination', progression='fast', scale=1e6):
+def plot_sweeps(fulldf=None, progression='fast', scale=1e6):
     '''
     Plot parameter sweeps
     '''
-
-    fulldf = sc.loadobj(f'{resfolder}/sweep_results.obj')
 
     # Initialize figure
     fig = pl.figure(figsize=(12, 10))
     gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
     pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
 
-    df = fulldf[(fulldf.tx_vx_scen==tx_vx_scen)&(fulldf.progression==progression)].groupby(['lo_eff','hi_eff']).sum().reset_index()
-    x = np.array(df['lo_eff'])
-    y = np.array(df['hi_eff'])
+    df = fulldf[(fulldf.progression==progression)].groupby(['sens','spec']).sum().reset_index()
+    x = np.array(df['sens'])
+    y = np.array(df['spec'])
     z = np.array(df['cancers_averted'])/scale
-    z_min = int(np.floor(min(z)))
-    z_max = int(np.ceil(max(z)))
+    z_min = 0
+    z_max = round(max(z),1)
     npts = 100
     scale = 0.08
     xi = np.linspace(0, 1, npts)
@@ -666,17 +636,15 @@ def plot_sweeps(locations=None, tx_vx_scen='mass_vaccination', progression='fast
     ima = axa.contourf(xx, yy, zz, cmap='plasma', levels=np.linspace(z_min, z_max, 100))
     axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3]*3, s=50, linewidth=0.1, alpha=0.5)
     axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
-    axa.set_xlabel('Virological clearance efficacy')
-    axa.set_ylabel('Lesion regression efficacy')
+    axa.set_xlabel('Sensitivity of AVE')
+    axa.set_ylabel('Specificity of AVE')
     axa.set_xlim([0, 1])
     axa.set_ylim([0, 1])
     axa.set_title('Cancers averted 2023-60 (million)', fontsize=28)
 
     # Colorbar
     axc = fig.add_subplot(gs[0, 2])
-    pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
+    pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 12), cax=axc)
 
-    # fig.tight_layout()
-    # fig.show()
-    fig_name = f'{figfolder}/{progression}_sweeps.png'
+    fig_name = f'{figfolder}/{progression}_AVE_sweeps.png'
     sc.savefig(fig_name, dpi=100)

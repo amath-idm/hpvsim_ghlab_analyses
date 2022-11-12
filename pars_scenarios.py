@@ -9,11 +9,12 @@ import hpvsim as hpv
 import pars_data as dp
 
 
-def get_screen_intvs(location, screen_scen=None, product=None, start_year=2020, end_year=2040):
+def get_screen_intvs(location, screen_scen=None, primary_prod=None, triage_prod=None, start_year=2020, end_year=2040):
     ''' Make interventions for screening scenarios '''
 
     # Create inputs
-    primary_screen = product if product else 'hpv' # Screening product
+    primary_screen = primary_prod if primary_prod else 'hpv' # Primary screening product
+    triage_screen = triage_prod if triage_prod else 'via' # Triage screening product
     screen_ramp = np.arange(start_year, end_year, dtype=int) # Ramp-up years
 
     # Only difference between the two screening scenarios is coverage over 2020-2040
@@ -52,14 +53,24 @@ def get_screen_intvs(location, screen_scen=None, product=None, start_year=2020, 
         label='screening'
     )
 
-    # Assign treatment
-    confirmed_positive = lambda sim: sim.get_intervention('screening').outcomes['positive']
+    # Triage screening
+    screen_positive = lambda sim: sim.get_intervention('screening').outcomes['positive']
+    triage_screening = hpv.routine_triage(
+        start_year=start_year,
+        prob=1.0,
+        annual_prob=False,
+        product=triage_screen,
+        eligibility=screen_positive,
+        label='triage'
+    )
+
+    triage_positive = lambda sim: sim.get_intervention('triage').outcomes['positive']
     assign_treatment = hpv.routine_triage(
         start_year=start_year,
         prob=1.0,
         annual_prob=False,
         product='tx_assigner',
-        eligibility=confirmed_positive,
+        eligibility=triage_positive,
         label='tx assigner'
     )
 
@@ -91,7 +102,7 @@ def get_screen_intvs(location, screen_scen=None, product=None, start_year=2020, 
         label='radiation'
     )
 
-    st_intvs = [screening, assign_treatment, ablation, excision, radiation]
+    st_intvs = [screening, triage_screening, assign_treatment, ablation, excision, radiation]
 
     return st_intvs
 
@@ -335,5 +346,8 @@ def make_AVE(sens=None, spec=None):
 
     # Make the ave product
     ave = hpv.dx(pd.concat([ave_spec, ave_fpr, ave_sens, ave_fnr]), hierarchy=['positive', 'negative'])
-
-    return [ave]
+    eff_vals = sc.objdict(
+        sens=ave_spec,
+        spec=ave_spec
+    )
+    return [ave], eff_vals

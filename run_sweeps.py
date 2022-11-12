@@ -37,7 +37,7 @@ n_draws = [240, 1][debug]     # How many seeds to use for stochasticity in proje
 
 
 #%% Sweep function
-def run_sweeps(location=None, n_draws=1, lo_effs=None, hi_effs=None, # Input data
+def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
                tx_vx_scen=None, vx_scen=None, screen_scen=None, ccuts=None, # Scenarios (for now, fix txvx, vx and screening, vary ccut)
                debug=0, verbose=-1, multiscale=True, do_shrink=True, # Sim settings
                ):
@@ -74,16 +74,16 @@ def run_sweeps(location=None, n_draws=1, lo_effs=None, hi_effs=None, # Input dat
     count = 0
     for i_ccs, ccut in enumerate(ccuts):
         for draw in range(n_draws):
-            txvx_prods, eff_vals = sp.make_txvx_prods(lo_eff=lo_effs[draw], hi_eff=hi_effs[draw]) # This takes a random sample of efficacy values
+            ave_prod, test_vals = sp.make_AVE(sens=sens[draw], spec=spec[draw]) # This takes a random sample of test characteristic values
             print(f'Creating arguments for sim {count} of {n_sims}...')
             count += 1
             meta = sc.objdict()
             meta.count = count
             meta.n_sims = n_sims
             meta.inds = [i_ccs, draw]
-            meta.eff_vals = eff_vals
+            meta.test_vals = test_vals
             meta.vals = sc.objdict(tx_vx_scen=tx_vx_scen, vx_scen=vx_scen, screen_scen=screen_scen,
-                                   txvx_prods=txvx_prods, ccut=ccut, use_calib_pars=True)
+                                   dx_prod=ave_prod, ccut=ccut, use_calib_pars=True)
             ikw.append(sc.dcp(meta.vals))
             ikw[-1].meta = meta
 
@@ -100,14 +100,13 @@ def run_sweeps(location=None, n_draws=1, lo_effs=None, hi_effs=None, # Input dat
 
         df = pd.DataFrame()
         df['cancers_averted'] = np.array([base_cancers - sim.results['total_cancers'][ys:ye].sum()])
-        df['tx_vaccinated'] = np.array(sim.results['n_tx_vaccinated'])[ys:ye].sum()
         df['location'] = [location]
         df['progression'] = 'linear' if ccuts[i_ccs] else 'fast'
         df['tx_vx_scen'] = [tx_vx_scen]
         df['vx_scen'] = [vx_scen]
         df['screen_scen'] = [screen_scen]
-        df['lo_eff'] = [sim.meta.eff_vals['lo_eff']]
-        df['hi_eff'] = [sim.meta.eff_vals['hi_eff']]
+        df['sens'] = [sim.meta.test_vals['sens']]
+        df['spec'] = [sim.meta.test_vals['spec']]
         dfs += df
 
     alldf = pd.concat(dfs)
@@ -123,29 +122,32 @@ if __name__ == '__main__':
 
     # Run sweeps
     if 'run_sweeps' in to_run:
-        for tx_vx_scen in ['mass_vaccination', 'test_and_vaccinate']:
-            alldfs = sc.autolist()
-            lo_effs = np.random.uniform(0,1,n_draws)
-            hi_effs = np.random.uniform(0,1,n_draws)
-            for location in locations:
-                vx_scens = '90vx_9to14' # Not varying prophylactic vax
-                screen_scens = '0sc_10tx' # Not varying S&T
-                tx_vx_scens = tx_vx_scen # Not varying txvx use case
-                progs = [False, True] # Only varying progression assumptions
-    
-                alldf, msims = run_sweeps(tx_vx_scen=tx_vx_scens, ccuts=progs, vx_scen=vx_scens, screen_scen=screen_scens,
-                                          n_draws=n_draws, lo_effs=lo_effs, hi_effs=hi_effs,
-                                          location=location, debug=debug)
-    
-                alldfs += alldf
-                sc.saveobj(f'{ut.resfolder}/{location}_{tx_vx_scen}_sweep_results.obj', alldf)
-    
-            bigdf = pd.concat(alldfs)
-            sc.saveobj(f'{ut.resfolder}/{tx_vx_scen}_sweep_results.obj', bigdf)
+        alldfs = sc.autolist()
+        sens = np.random.uniform(0.4, 1, n_draws)
+        spec = np.random.uniform(0.7, 1, n_draws)
+        for location in locations:
+            vx_scens = '90vx_9to14'  # Not varying prophylactic vax
+            screen_scens = '70sc_90tx'  # Not varying S&T
+            tx_vx_scens = None  # Not varying txvx use case
+            progs = [False, True]  # Only varying progression assumptions
+
+            alldf, msims = run_sweeps(tx_vx_scen=tx_vx_scens, ccuts=progs, vx_scen=vx_scens, screen_scen=screen_scens,
+                                      n_draws=n_draws, sens=sens, spec=spec,
+                                      location=location, debug=debug)
+
+            alldfs += alldf
+            sc.saveobj(f'{ut.resfolder}/{location}_sweep_results.obj', alldf)
+
+        bigdf = pd.concat(alldfs)
+        sc.saveobj(f'{ut.resfolder}/_sweep_results.obj', bigdf)
+
 
     # Plot results of sweeps
     if 'plot_sweeps' in to_run:
         for prog in ['fast', 'linear']:
-            ut.plot_sweeps(locations=locations, progression=prog)
+            for location in locations:
+                # Load the dataframe
+                fulldf = sc.loadobj(f'{ut.resfolder}/{location}_sweep_results.obj')
+                ut.plot_sweeps(fulldf, location=location, progression=prog)
     
     T.toc('Done')
