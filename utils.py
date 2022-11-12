@@ -625,8 +625,8 @@ def plot_sweeps(fulldf=None, location='india', progression='fast', scale=1e6):
     z_max = round(max(z),1)
     npts = 100
     scale = 0.08
-    xi = np.linspace(0, 1, npts)
-    yi = np.linspace(0, 1, npts)
+    xi = np.linspace(np.min(x), np.max(x), npts)
+    yi = np.linspace(np.min(y), np.max(y), npts)
     xx, yy = np.meshgrid(xi, yi)
     zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
     scolors = sc.vectocolor(z, cmap='plasma', minval=z_min, maxval=z_max)
@@ -638,8 +638,8 @@ def plot_sweeps(fulldf=None, location='india', progression='fast', scale=1e6):
     axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
     axa.set_xlabel('Sensitivity of AVE')
     axa.set_ylabel('Specificity of AVE')
-    axa.set_xlim([0, 1])
-    axa.set_ylim([0, 1])
+    axa.set_xlim([np.min(x), np.max(x)])
+    axa.set_ylim([np.min(y), np.max(y)])
     axa.set_title('Cancers averted 2023-60 (million)', fontsize=28)
 
     # Colorbar
