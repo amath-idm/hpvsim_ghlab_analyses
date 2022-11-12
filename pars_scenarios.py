@@ -347,7 +347,7 @@ def make_AVE(sens=None, spec=None):
     # Make the ave product
     ave = hpv.dx(pd.concat([ave_spec, ave_fpr, ave_sens, ave_fnr]), hierarchy=['positive', 'negative'])
     eff_vals = sc.objdict(
-        sens=ave_spec,
-        spec=ave_spec
+        sens=sens,
+        spec=spec
     )
-    return [ave], eff_vals
+    return ave, eff_vals

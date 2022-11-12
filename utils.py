@@ -607,7 +607,7 @@ def plot_scens(locations=None, background_scens=None, tx_vx_scens=None, progress
 
     return
 
-def plot_sweeps(fulldf=None, progression='fast', scale=1e6):
+def plot_sweeps(fulldf=None, location='india', progression='fast', scale=1e6):
     '''
     Plot parameter sweeps
     '''
@@ -646,5 +646,5 @@ def plot_sweeps(fulldf=None, progression='fast', scale=1e6):
     axc = fig.add_subplot(gs[0, 2])
     pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 12), cax=axc)
 
-    fig_name = f'{figfolder}/{progression}_AVE_sweeps.png'
+    fig_name = f'{figfolder}/{progression}_{location}_AVE_sweeps.png'
     sc.savefig(fig_name, dpi=100)
