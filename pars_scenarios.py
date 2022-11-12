@@ -320,9 +320,9 @@ def make_AVE(sens=None, spec=None):
     lo_grade = ['precin', 'latent', 'cin1']  # No lesions or low grade lesions (a specificity test will count these as negative)
     hi_grade = ['cin2', 'cin3', 'cancerous']  # High grade lesions (a sensitive test will count these as positive)
 
-    # Randomly perturb the test positivity values
-    if sens is None: sens = np.random.uniform(0, 1)
-    if spec is None: spec = np.random.uniform(0, 1)
+    # Randomly perturb the test positivity values (lower-bounded by characteristics of VIA)
+    if sens is None: sens = np.random.uniform(0.4, 1)
+    if spec is None: spec = np.random.uniform(0.7, 1)
 
     ave_spec = basedf.loc[(basedf.state.isin(lo_grade)) & (basedf.result == 'negative')].copy()
     ave_sens = basedf.loc[(basedf.state.isin(hi_grade)) & (basedf.result == 'positive')].copy()
