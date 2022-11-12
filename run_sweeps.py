@@ -28,8 +28,8 @@ to_run = [
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    'nigeria',  # 1
-    'tanzania', # 2
+    # 'nigeria',  # 1
+    # 'tanzania', # 2
 ]
 
 debug = False
