@@ -68,29 +68,6 @@ def make_sim_parts(location=None, calib=False, vaccination_coverage=None,
     # Analyzers
     analyzers = sc.autolist()
 
-    # Save age results unless it's a calibration
-    if not calib:
-        edges = np.array([0., 15., 20., 25., 30., 40., 45., 50., 55., 65., 100.])
-        az = hpv.age_results(
-            result_keys=sc.objdict(
-                total_infections=sc.objdict(
-                    timepoints=['2019'],
-                    edges=edges,
-                ),
-                total_hpv_prevalence=sc.objdict(
-                    timepoints=['2019'],
-                    edges=edges,
-                ),
-                total_cancers=sc.objdict(
-                    datafile=f'data/{location}_cancer_cases.csv',
-                ),
-                total_cancer_deaths=sc.objdict(
-                    datafile=f'data/{location}_cancer_deaths.csv',
-                )
-            )
-        )
-        analyzers += az
-
     # Save population analyzers if requested
     if pop_analyzers:
         analyzers += [
