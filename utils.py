@@ -640,7 +640,7 @@ def plot_sweeps(fulldf=None, location='india', progression='fast', scale=1e6): #
     axa.set_ylabel('Specificity of AVE')
     axa.set_xlim([np.min(x), np.max(x)])
     axa.set_ylim([np.min(y), np.max(y)])
-    axa.set_title('Cancers averted 2023-60 (million)', fontsize=28)
+    axa.set_title('Cancers averted, relative to VIA (millions)', fontsize=28)
 
     # Colorbar
     axc = fig.add_subplot(gs[0, 2])
@@ -649,32 +649,69 @@ def plot_sweeps(fulldf=None, location='india', progression='fast', scale=1e6): #
     fig_name = f'{figfolder}/{progression}_{location}_AVE_impact_sweeps.png'
     sc.savefig(fig_name, dpi=100)
 
-    # Initialize figure
+    # Initialize figure for treatments
     fig = pl.figure(figsize=(12, 10))
     gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
     pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
 
-    z = np.array(df['new_cin_treatments'])/np.array(df['cancers_averted'])
-    z_min = 0
+    scale=1e6
+    z = np.array(df['new_cin_treatments'])/scale#/np.array(df['cancers_averted'])
+    z_min = round(min(z),1)
     z_max = round(max(z),1)
     npts = 100
     scale = 0.08
     xi = np.linspace(np.min(x), np.max(x), npts)
     yi = np.linspace(np.min(y), np.max(y), npts)
     xx, yy = np.meshgrid(xi, yi)
+
     zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
-    scolors = sc.vectocolor(z, cmap='plasma', minval=z_min, maxval=z_max)
+    scolors = sc.vectocolor(z, cmap='viridis', minval=z_min, maxval=z_max)
 
     # Plot heatmap
     axa = fig.add_subplot(gs[0, 0])
-    ima = axa.contourf(xx, yy, zz, cmap='plasma', levels=np.linspace(z_min, z_max, 100))
+    ima = axa.contourf(xx, yy, zz, cmap='viridis', levels=np.linspace(z_min, z_max, 100))
     axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3]*3, s=50, linewidth=0.1, alpha=0.5)
     axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
     axa.set_xlabel('Sensitivity of AVE')
     axa.set_ylabel('Specificity of AVE')
     axa.set_xlim([np.min(x), np.max(x)])
     axa.set_ylim([np.min(y), np.max(y)])
-    axa.set_title('Number needed to treat to avert a cancer', fontsize=28)
+    axa.set_title('Number CIN treatments, relative to VIA (millions)', fontsize=28)
+
+    # Colorbar
+    axc = fig.add_subplot(gs[0, 2])
+    pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
+
+    fig_name = f'{figfolder}/{progression}_{location}_AVE_treatments_sweeps.png'
+    sc.savefig(fig_name, dpi=100)
+
+    # Initialize figure for NNT
+    fig = pl.figure(figsize=(12, 10))
+    gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
+    pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
+
+    z = np.array(df['new_cin_treatments'])/np.array(df['cancers_averted'])
+    z_min = 0
+    z_max = 70
+    npts = 100
+    scale = 0.08
+    xi = np.linspace(np.min(x), np.max(x), npts)
+    yi = np.linspace(np.min(y), np.max(y), npts)
+    xx, yy = np.meshgrid(xi, yi)
+
+    zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
+    scolors = sc.vectocolor(z, cmap='magma', minval=z_min, maxval=z_max)
+
+    # Plot heatmap
+    axa = fig.add_subplot(gs[0, 0])
+    ima = axa.contourf(xx, yy, zz, cmap='magma', levels=np.linspace(z_min, z_max, 100))
+    axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3]*3, s=50, linewidth=0.1, alpha=0.5)
+    axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
+    axa.set_xlabel('Sensitivity of AVE')
+    axa.set_ylabel('Specificity of AVE')
+    axa.set_xlim([np.min(x), np.max(x)])
+    axa.set_ylim([np.min(y), np.max(y)])
+    axa.set_title('Number CIN treatments to avert a case, relative to VIA', fontsize=28)
 
     # Colorbar
     axc = fig.add_subplot(gs[0, 2])
