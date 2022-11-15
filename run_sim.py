@@ -40,7 +40,7 @@ save_plots = True
 def make_sim_parts(location=None, calib=False, vaccination_coverage=None,
                    vx_scen=None, tx_vx_scen=None, screen_scen=None, indication=None,
                    save_econ=False, intro_year=None, debug=0, txvx_prods=None, dx_prod=None,
-                   multiscale=True, pop_analyzers=False):
+                   multiscale=True, pop_analyzers=False, by_age_analyzers=False):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
 
     is_scen = (vx_scen is not None) or (tx_vx_scen is not None) or (screen_scen is not None)
@@ -76,6 +76,27 @@ def make_sim_parts(location=None, calib=False, vaccination_coverage=None,
             datafile=f'data/{location}_age_pyramid_reduced.csv',
             edges=np.linspace(0, 80, 9)),
             hpv.snapshot(timepoints=['2020']),
+        ]
+
+    if by_age_analyzers:
+        edges = np.array([0., 15., 20., 25., 30., 40., 45., 50., 55., 65., 100.])
+        analyzers += [
+            hpv.age_results(
+                result_keys=sc.objdict(
+                    total_infections=sc.objdict(
+                        timepoints=['2019'],
+                        edges=edges,
+                    ),
+                    total_hpv_prevalence=sc.objdict(
+                        timepoints=['2019'],
+                        edges=edges,
+                    ),
+                    # total_hpv_incidence=sc.objdict(
+                    #     timepoints=['2019'],
+                    #     edges=edges,
+                    # )
+                )
+            )
         ]
 
     # Save costing analyzer if requested
@@ -153,7 +174,7 @@ def run_sim(location=None, ccut=None, use_calib_pars=False,
             vx_scen=None, tx_vx_scen=None, screen_scen=None,
             indication=None, txvx_prods=None, dx_prod=None, intro_year=None,
             save_econ=None, multiscale=True, debug=0, label=None, meta=None, verbose=0.1, do_shrink=True,
-            do_save=True, pop_analyzers=False, die=False):
+            do_save=True, pop_analyzers=False, by_age_analyzers=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
 
     # Decide what message to print
@@ -168,7 +189,7 @@ def run_sim(location=None, ccut=None, use_calib_pars=False,
     args = make_sim_parts(location=location, calib=False, vaccination_coverage=vaccination_coverage,
                           vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, intro_year=intro_year,
                           indication=indication, save_econ=save_econ, txvx_prods=txvx_prods, dx_prod=dx_prod,
-                          multiscale=multiscale, debug=debug, pop_analyzers=pop_analyzers)
+                          multiscale=multiscale, debug=debug, pop_analyzers=pop_analyzers, by_age_analyzers=by_age_analyzers)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 
     # Store metadata
@@ -220,20 +241,23 @@ def run_sim(location=None, ccut=None, use_calib_pars=False,
         }
         if screen_scen is not None:
             to_plot['Screens'] = [
-                'resources_screening',
+                'new_screens',
+                'new_screened'
             ]
             to_plot['Tx'] = [
-                'resources_ablation',
-                'resources_excision',
+                'new_cin_treatments',
+                'new_cin_treated'
             ]
         if tx_vx_scen is not None:
             to_plot['TxVx'] = [
-                'resources_campaign txvx',
-                'resources_routine txvx',
+                'new_txvx_doses',
+                'new_tx_vaccinated',
             ]
         sim.plot(do_save=save_plots, do_show=True, to_plot=to_plot, fig_path=f'{ut.figfolder}/{location}_basic_epi.png')
-        # az = sim.get_analyzer(hpv.age_results)
-        # az.plot(do_save=save_plots, do_show=True, fig_path=f'{figfolder}/{location}_cancer_by_age.png')
+
+        if by_age_analyzers:
+            az = sim.get_analyzer(hpv.age_results)
+            az.plot(do_save=save_plots, do_show=True, fig_path=f'{ut.figfolder}/{location}_by_age.png')
     
     if do_shrink: 
         sim.shrink()
@@ -262,7 +286,7 @@ def run_sim(location=None, ccut=None, use_calib_pars=False,
 def run_sims(locations=None, *args, **kwargs):
     ''' Run multiple simulations in parallel '''
     
-    kwargs = dict(use_calib_pars=True, do_plot=False, debug=debug, save_econ=False, pop_analyzers=True, do_save=True)
+    kwargs = sc.mergedicts(dict(use_calib_pars=True, do_plot=False, debug=debug, save_econ=False, pop_analyzers=True, do_save=True), kwargs)
     simlist = sc.parallelize(run_sim, iterkwargs=dict(location=locations), kwargs=kwargs, serial=debug, die=True)
     sims = sc.objdict({location:sim for location,sim in zip(locations, simlist)}) # Convert from a list to a dict
     
@@ -275,7 +299,7 @@ if __name__ == '__main__':
     T = sc.timer()
     
     # Run a single sim per location -- usually locally, can be used for sanity checking and debugging
-    sims = run_sims(locations)
+    sims = run_sims(locations, by_age_analyzers=True, do_plot=True)
     
     T.toc('Done')
 

@@ -21,13 +21,13 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    'run_sweeps',
-    # 'plot_sweeps',
+    # 'run_sweeps',
+    'plot_sweeps',
 ]
 
 # Comment out locations to not run
 locations = [
-    # 'india',    # 0
+    'india',    # 0
     'nigeria',  # 1
     'tanzania', # 2
 ]
