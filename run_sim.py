@@ -37,7 +37,7 @@ save_plots = True
 
 
 #%% Simulation creation functions
-def make_sim_parts(location=None, calib=False, vaccination_coverage=None,
+def make_sim_parts(location=None, vaccination_coverage=None,
                    vx_scen=None, tx_vx_scen=None, screen_scen=None, indication=None,
                    save_econ=False, intro_year=None, debug=0, txvx_prods=None, dx_prod=None,
                    multiscale=True, pop_analyzers=False, by_age_analyzers=False):
@@ -151,7 +151,7 @@ def make_sim_parts(location=None, calib=False, vaccination_coverage=None,
 
     if tx_vx_scen is not None:
         # Add in therapeutic vaccines
-        interventions += sp.get_txvx_intvs(location=location, use_case=tx_vx_scen, indication=indication,
+        interventions += sp.get_txvx_intvs(use_case=tx_vx_scen, indication=indication,
                                            txvx_prods=txvx_prods, intro_year=intro_year)
 
     if screen_scen is not None:
@@ -169,7 +169,7 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 
 #%% Simulation running functions
 
-def run_sim(location=None, ccut=None, use_calib_pars=False,
+def run_sim(location=None, use_calib_pars=False,
             do_plot=False, save_plots=False, seed=0, vaccination_coverage=None,
             vx_scen=None, tx_vx_scen=None, screen_scen=None,
             indication=None, txvx_prods=None, dx_prod=None, intro_year=None,
@@ -186,7 +186,7 @@ def run_sim(location=None, ccut=None, use_calib_pars=False,
     print(msg)
 
     # Make arguments
-    args = make_sim_parts(location=location, calib=False, vaccination_coverage=vaccination_coverage,
+    args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage,
                           vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, intro_year=intro_year,
                           indication=indication, save_econ=save_econ, txvx_prods=txvx_prods, dx_prod=dx_prod,
                           multiscale=multiscale, debug=debug, pop_analyzers=pop_analyzers, by_age_analyzers=by_age_analyzers)
@@ -203,7 +203,6 @@ def run_sim(location=None, ccut=None, use_calib_pars=False,
     sim.label = location # Set label
 
     # Make any parameter updates
-    if ccut: sim.update_pars({'clinical_cutoffs': {'cin1': 0.8, 'cin2':0.9, 'cin3':0.99}})
     if use_calib_pars:
         file = f'{ut.resfolder}/{location}_pars.obj'
         try:
