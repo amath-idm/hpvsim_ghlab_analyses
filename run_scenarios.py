@@ -22,7 +22,7 @@ import pars_scenarios as sp
 # Comment out to not run
 to_run = [
     'run_scenarios',
-    'plot_scenarios',
+    # 'plot_scenarios',
 ]
 
 # Comment out locations to not run
@@ -198,9 +198,9 @@ if __name__ == '__main__':
         for location in locations:
             filestem = 'scenario_results'
 
-            vx_scens = [None, '90vx_9to14']
-            screen_scens = ['0sc_10tx', '70sc_90tx']
-            tx_vx_scens = [None, 'mass_vaccination']#, 'test_and_vaccinate']
+            vx_scens = ['90vx_9to14']
+            screen_scens = ['70sc_90tx']
+            tx_vx_scens = [None]#, 'mass_vaccination', 'test_and_vaccinate']
             ltfus = [0.3, 0.05]
             ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
             dx_prods = [None, ave_prod]

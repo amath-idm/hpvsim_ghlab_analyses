@@ -21,8 +21,8 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    'run_sweeps',
-    # 'plot_sweeps',
+    # 'run_sweeps',
+    'plot_sweeps',
 ]
 
 # Comment out locations to not run
@@ -146,9 +146,10 @@ if __name__ == '__main__':
     # Plot results of sweeps
     if 'plot_sweeps' in to_run:
         for location in locations:
-            # Load the dataframe
-            fulldf = sc.loadobj(f'{ut.resfolder}/{location}_sweep_results.obj')
-            ut.plot_sweeps(fulldf, location=location)
+            for ltfu in [0.3, 0.05]:
+                # Load the dataframe
+                fulldf = sc.loadobj(f'{ut.resfolder}/{location}_sweep_results.obj')
+                ut.plot_sweeps(fulldf, ltfu=ltfu, location=location)
 
     
     T.toc('Done')

@@ -607,7 +607,7 @@ def plot_scens(locations=None, background_scens=None, tx_vx_scens=None, progress
 
     return
 
-def plot_sweeps(fulldf=None, location='india', scale=1e6): # TODO: set this up to plot cancers averted and/or NNT
+def plot_sweeps(fulldf=None, location='india', ltfu=None, scale=1e6): # TODO: set this up to plot cancers averted and/or NNT
     '''
     Plot parameter sweeps
     '''
@@ -617,7 +617,7 @@ def plot_sweeps(fulldf=None, location='india', scale=1e6): # TODO: set this up t
     gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
     pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
 
-    df = fulldf.groupby(['sens','spec']).sum().reset_index()
+    df = fulldf[fulldf.ltfu==ltfu].groupby(['sens','spec']).sum().reset_index()
     x = np.array(df['sens'])
     y = np.array(df['spec'])
     z = np.array(df['cancers_averted'])/scale
@@ -646,7 +646,7 @@ def plot_sweeps(fulldf=None, location='india', scale=1e6): # TODO: set this up t
     axc = fig.add_subplot(gs[0, 2])
     pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
 
-    fig_name = f'{figfolder}/{location}_AVE_impact_sweeps.png'
+    fig_name = f'{figfolder}/{location}_AVE_impact_sweeps_{ltfu}ltfu.png'
     sc.savefig(fig_name, dpi=100)
 
     # Initialize figure for treatments
@@ -655,7 +655,7 @@ def plot_sweeps(fulldf=None, location='india', scale=1e6): # TODO: set this up t
     pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
 
     scale=1e6
-    z = np.array(df['new_cin_treatments'])/scale#/np.array(df['cancers_averted'])
+    z = np.array(df['new_cin_treatments'])/scale
     z_min = round(min(z),1)
     z_max = round(max(z),1)
     npts = 100
@@ -682,7 +682,7 @@ def plot_sweeps(fulldf=None, location='india', scale=1e6): # TODO: set this up t
     axc = fig.add_subplot(gs[0, 2])
     pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
 
-    fig_name = f'{figfolder}/{location}_AVE_treatments_sweeps.png'
+    fig_name = f'{figfolder}/{location}_AVE_treatments_sweeps_{ltfu}ltfu.png'
     sc.savefig(fig_name, dpi=100)
 
     # Initialize figure for NNT
@@ -717,5 +717,5 @@ def plot_sweeps(fulldf=None, location='india', scale=1e6): # TODO: set this up t
     axc = fig.add_subplot(gs[0, 2])
     pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
 
-    fig_name = f'{figfolder}/{location}_AVE_NNT_sweeps.png'
+    fig_name = f'{figfolder}/{location}_AVE_NNT_sweeps_{ltfu}ltfu.png'
     sc.savefig(fig_name, dpi=100)
