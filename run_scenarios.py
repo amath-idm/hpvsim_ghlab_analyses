@@ -203,7 +203,7 @@ if __name__ == '__main__':
             tx_vx_scens = [None]#, 'mass_vaccination', 'test_and_vaccinate']
             ltfus = [0.3, 0.05]
             ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
-            dx_prods = [None, ave_prod]
+            dx_prods = [None, ave_prod[0]]
             intro_years=[2030]
             alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens,
                                      tx_vx_scens=tx_vx_scens, intro_years=intro_years,
