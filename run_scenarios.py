@@ -175,7 +175,7 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         df['tx_vx_scen'] = tx_vx_scen_label
         df['intro_year'] = intro_years[i_iys]
         df['ltfu'] = ltfus[i_l]
-        df['dx_prof'] = 'via' if dx_prods[i_dx] is None else 'ave'
+        df['dx_prod'] = 'via' if dx_prods[i_dx] is None else 'ave'
         dfs += df
 
     alldf = pd.concat(dfs)
@@ -218,50 +218,50 @@ if __name__ == '__main__':
 
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
-        for prog in ['linear', 'fast']:
-            ut.plot_scens(
-                locations=['india', 'nigeria', 'tanzania'],
-                background_scens={
-                    'No scale-up': {
-                        'vx_scen' : 'no_vx',
-                        'screen_scen': '0sc_10tx'
-                    },
-                    '90% vaccine scale-up': {
-                        'vx_scen': '90vx_9to14',
-                        'screen_scen': '0sc_10tx'
-                     },
-                    '90% vaccine, 70% screening, 90% treatment': {
-                        'vx_scen': '90vx_9to14',
-                        'screen_scen': '70sc_90tx'
-                    },
-                },
-
-                tx_vx_scens=['no_txvx', 'mass_vaccination', 'test_and_vaccinate'],
-                debug=debug,
-            )
-
-            ut.plot_tx_vx_scens(
-                locations=['india', 'nigeria', 'tanzania'],
-                background_scens={
-                    'No scale-up': {
-                        'vx_scen': 'no_vx',
-                        'screen_scen': '0sc_10tx'
-                    },
-                    '90% vaccine scale-up': {
-                        'vx_scen': '90vx_9to14',
-                        'screen_scen': '0sc_10tx'
-                    },
-                    '90% vaccine, 70% screening, 90% treatment': {
-                        'vx_scen': '90vx_9to14',
-                        'screen_scen': '70sc_90tx'
-                    },
-                },
-
-                tx_vx_scens=['mass_vaccination', 'test_and_vaccinate']
-            )
+        # for prog in ['linear', 'fast']:
+        #     ut.plot_scens(
+        #         locations=['india', 'nigeria', 'tanzania'],
+        #         background_scens={
+        #             'No scale-up': {
+        #                 'vx_scen' : 'no_vx',
+        #                 'screen_scen': '0sc_10tx'
+        #             },
+        #             '90% vaccine scale-up': {
+        #                 'vx_scen': '90vx_9to14',
+        #                 'screen_scen': '0sc_10tx'
+        #              },
+        #             '90% vaccine, 70% screening, 90% treatment': {
+        #                 'vx_scen': '90vx_9to14',
+        #                 'screen_scen': '70sc_90tx'
+        #             },
+        #         },
+        #
+        #         tx_vx_scens=['no_txvx', 'mass_vaccination', 'test_and_vaccinate'],
+        #         debug=debug,
+        #     )
+        #
+        #     ut.plot_tx_vx_scens(
+        #         locations=['india', 'nigeria', 'tanzania'],
+        #         background_scens={
+        #             'No scale-up': {
+        #                 'vx_scen': 'no_vx',
+        #                 'screen_scen': '0sc_10tx'
+        #             },
+        #             '90% vaccine scale-up': {
+        #                 'vx_scen': '90vx_9to14',
+        #                 'screen_scen': '0sc_10tx'
+        #             },
+        #             '90% vaccine, 70% screening, 90% treatment': {
+        #                 'vx_scen': '90vx_9to14',
+        #                 'screen_scen': '70sc_90tx'
+        #             },
+        #         },
+        #
+        #         tx_vx_scens=['mass_vaccination', 'test_and_vaccinate']
+        #     )
 
         ut.plot_residual_burden(
-            locations=['india', 'nigeria', 'tanzania'],
+            locations=['india'],#, 'nigeria', 'tanzania'],
             background_scens={
                 'No scale-up': {
                     'vx_scen': 'no_vx',
