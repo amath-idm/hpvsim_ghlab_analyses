@@ -171,7 +171,7 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 
 def run_sim(location=None, use_calib_pars=False,
             do_plot=False, save_plots=False, seed=0, vaccination_coverage=None,
-            vx_scen=None, tx_vx_scen=None, screen_scen=None,
+            vx_scen=None, tx_vx_scen=None, screen_scen=None, ltfu=None,
             indication=None, txvx_prods=None, dx_prod=None, intro_year=None,
             save_econ=None, multiscale=True, debug=0, label=None, meta=None, verbose=0.1, do_shrink=True,
             do_save=True, pop_analyzers=False, by_age_analyzers=False, die=False):
@@ -187,7 +187,7 @@ def run_sim(location=None, use_calib_pars=False,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage,
-                          vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, intro_year=intro_year,
+                          vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, ltfu=ltfu, intro_year=intro_year,
                           indication=indication, save_econ=save_econ, txvx_prods=txvx_prods, dx_prod=dx_prod,
                           multiscale=multiscale, debug=debug, pop_analyzers=pop_analyzers, by_age_analyzers=by_age_analyzers)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
