@@ -21,8 +21,8 @@ import pars_scenarios as sp
 
 # Comment out to not run
 to_run = [
-    'run_scenarios',
-    # 'plot_scenarios',
+    # 'run_scenarios',
+    'plot_scenarios',
 ]
 
 # Comment out locations to not run
@@ -261,20 +261,31 @@ if __name__ == '__main__':
         #     )
 
         ut.plot_residual_burden(
-            locations=['india'],#, 'nigeria', 'tanzania'],
+            locations=['india', 'nigeria', 'tanzania'],
             background_scens={
-                'No scale-up': {
-                    'vx_scen': 'no_vx',
-                    'screen_scen': '0sc_10tx'
-                },
-                '90% vaccine scale-up': {
+                'HPV+VIA+TA': {
                     'vx_scen': '90vx_9to14',
-                    'screen_scen': '0sc_10tx'
+                    'screen_scen': '70sc_90tx',
+                    'ltfu': 0.3,
+                    'dx_prod': 'via'
                 },
-                '90% vaccine, 70% screening, 90% treatment': {
+                'HPV+AVE+TA': {
                     'vx_scen': '90vx_9to14',
-                    'screen_scen': '70sc_90tx'
+                    'screen_scen': '70sc_90tx',
+                    'ltfu': 0.3,
+                    'dx_prod': 'ave'
                 },
-            },
-            compare_models=False
+                'POC-HPV+VIA+TA': {
+                    'vx_scen': '90vx_9to14',
+                    'screen_scen': '70sc_90tx',
+                    'ltfu': 0.05,
+                    'dx_prod': 'via'
+                },
+                'POC-HPV+AVE+TA': {
+                    'vx_scen': '90vx_9to14',
+                    'screen_scen': '70sc_90tx',
+                    'ltfu': 0.05,
+                    'dx_prod': 'ave'
+                },
+            }
         )

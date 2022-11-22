@@ -208,8 +208,7 @@ def plot_calib_pars(locations=None, to_plot=None, do_save=True):
     return
 
 
-def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_txvx', 
-                         progression='fast', indication='virologic_clearance', compare_models=False):
+def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_txvx'):
     '''
     Plot the residual burden of HPV
     '''
@@ -227,17 +226,6 @@ def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_t
             alldfs += alldf
         bigdf = pd.concat(alldfs)
     colors = sc.gridcolors(10)
-    if compare_models:
-        try:
-            harvard_burden = pd.read_csv('results/burden_estimates_Harvard-Sweet_202110gavi-3_hpv-routine-default.csv')
-            LSHTM_burden = pd.read_csv('results/burden_estimates_LSHTM-Jit_202110gavi-3_hpv-routine-default.csv')
-            harvard_burden = harvard_burden[harvard_burden['country_name'].isin(location_legend)]
-            LSHTM_burden = LSHTM_burden[LSHTM_burden['country_name'].isin(location_legend)]
-            harvard_burden = harvard_burden.groupby(['year']).sum()[['cases', 'deaths']]
-            LSHTM_burden = LSHTM_burden.groupby(['year']).sum()[['cases', 'deaths']]
-        except FileNotFoundError as E:
-            errormsg = 'File(s) not found: data files are large and need to be downloaded separately'
-            raise FileNotFoundError(errormsg) from E
 
     for res, reslabel in {'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items():
         fig, ax = pl.subplots(figsize=(16, 8))
@@ -245,8 +233,11 @@ def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_t
         for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
             vx_scen = background_scen['vx_scen']
             screen_scen = background_scen['screen_scen']
-            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (bigdf.progression == progression) & (
-                        bigdf.tx_vx_scen == tx_vx_scen) & (bigdf.indication == indication)].groupby('year')[
+            ltfu = background_scen['ltfu']
+            dx_prod = background_scen['dx_prod']
+            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) &
+                       (bigdf.tx_vx_scen == tx_vx_scen) & (bigdf.ltfu == ltfu) &
+                       (bigdf.dx_prod == dx_prod)].groupby('year')[
                 [f'{res}', f'{res}_low', f'{res}_high']].sum()
             years = np.array(df.index)[50:106]
             best = np.array(df[res])[50:106]
@@ -256,18 +247,11 @@ def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_t
             ax.plot(years, best, color=colors[cn], label=background_scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
-        if compare_models:
-            ax.plot(years, harvard_burden['cases'][0:56], color=colors[cn+1], label='Harvard model')
-            ax.plot(years, LSHTM_burden['cases'][0:56], color=colors[cn+2], label='LSHTM model')
-
         ax.legend(loc='upper left')
         sc.SIticks(ax)
         ax.set_ylabel(f'{reslabel}')
         fig.tight_layout()
-        if compare_models:
-            fig_name = f'{figfolder}/residual_{res}_model_comparison.png'
-        else:
-            fig_name = f'{figfolder}/residual_{res}.png'
+        fig_name = f'{figfolder}/residual_{res}.png'
         sc.savefig(fig_name, dpi=100)
 
     return
