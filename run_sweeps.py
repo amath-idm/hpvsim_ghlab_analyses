@@ -21,15 +21,15 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    # 'run_sweeps',
-    'plot_sweeps',
+    'run_sweeps',
+    # 'plot_sweeps',
 ]
 
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    'nigeria',  # 1
-    'tanzania', # 2
+    # 'nigeria',  # 1
+    # 'tanzania', # 2
 ]
 
 debug = False
@@ -38,7 +38,7 @@ n_draws = [240, 1][debug]     # How many seeds to use for stochasticity in proje
 
 #%% Sweep function
 def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
-               tx_vx_scen=None, vx_scen=None, screen_scen=None, # Scenarios (for now, fix txvx, vx and screening)
+               tx_vx_scen=None, vx_scen=None, screen_scen=None, ltfus=None, # Scenarios (for now, fix txvx, vx and screening)
                debug=0, verbose=-1, multiscale=True, do_shrink=True, # Sim settings
                ):
     '''
@@ -46,7 +46,7 @@ def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
     '''
 
     vaccination_coverage = sc.loadobj(f'{ut.datafolder}/vaccination_coverage.obj')
-    n_sims = n_draws
+    n_sims = len(ltfus) * n_draws
 
     # Get baseline
     kwargs = dict(vaccination_coverage=vaccination_coverage,
@@ -73,19 +73,20 @@ def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
     # Set up iteration arguments
     ikw = []
     count = 0
-    for draw in range(n_draws):
-        ave_prod, test_vals = sp.make_AVE(sens=sens[draw], spec=spec[draw])  # Takes a random sample of test characteristic values
-        print(f'Creating arguments for sim {count} of {n_sims}...')
-        count += 1
-        meta = sc.objdict()
-        meta.count = count
-        meta.n_sims = n_sims
-        meta.inds = [draw]
-        meta.test_vals = test_vals
-        meta.vals = sc.objdict(tx_vx_scen=tx_vx_scen, vx_scen=vx_scen, screen_scen=screen_scen,
-                               dx_prod=ave_prod, use_calib_pars=True)
-        ikw.append(sc.dcp(meta.vals))
-        ikw[-1].meta = meta
+    for i_l, ltfu in enumerate(ltfus):
+        for draw in range(n_draws):
+            ave_prod, test_vals = sp.make_AVE(sens=sens[draw], spec=spec[draw])  # Takes a random sample of test characteristic values
+            print(f'Creating arguments for sim {count} of {n_sims}...')
+            count += 1
+            meta = sc.objdict()
+            meta.count = count
+            meta.n_sims = n_sims
+            meta.inds = [i_l, draw]
+            meta.test_vals = test_vals
+            meta.vals = sc.objdict(tx_vx_scen=tx_vx_scen, vx_scen=vx_scen, screen_scen=screen_scen, ltfu=ltfu,
+                                   dx_prod=ave_prod, use_calib_pars=True)
+            ikw.append(sc.dcp(meta.vals))
+            ikw[-1].meta = meta
 
 
     sc.heading(f'Running {len(ikw)} sweep sims...')
@@ -94,10 +95,10 @@ def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
 
     # Now strip out all the results and place them in a dataframe
     dfs = sc.autolist()
-    sims = np.empty(n_draws, dtype=object) # Rearrange sims
+    sims = np.empty((len(ltfus), n_draws), dtype=object) # Rearrange sims
     for sim in all_sims:  # Unflatten array
-        draw = sim.meta.inds
-        sims[draw] = sim
+        i_l, draw = sim.meta.inds
+        sims[i_l, draw] = sim
 
         df = pd.DataFrame()
         df['cancers_averted'] = np.array([base_cancers - sim.results['total_cancers'][ys:ye].sum()])
@@ -106,6 +107,7 @@ def run_sweeps(location=None, n_draws=1, sens=None, spec=None, # Input data
         df['tx_vx_scen'] = [tx_vx_scen]
         df['vx_scen'] = [vx_scen]
         df['screen_scen'] = [screen_scen]
+        df['ltfu'] = ltfus[i_l]
         df['sens'] = [sim.meta.test_vals['sens']]
         df['spec'] = [sim.meta.test_vals['spec']]
         dfs += df
@@ -130,8 +132,9 @@ if __name__ == '__main__':
             vx_scens = '90vx_9to14'  # Not varying prophylactic vax
             screen_scens = '70sc_90tx'  # Not varying S&T
             tx_vx_scens = None  # Not varying txvx use case
+            ltfus=[0.3, 0.05] # Varying LTFU (proxy for POC HPV test)
             alldf, msims = run_sweeps(tx_vx_scen=tx_vx_scens, vx_scen=vx_scens, screen_scen=screen_scens,
-                                      n_draws=n_draws, sens=sens, spec=spec,
+                                      ltfus=ltfus, n_draws=n_draws, sens=sens, spec=spec,
                                       location=location, debug=debug)
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_sweep_results.obj', alldf)

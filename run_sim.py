@@ -38,7 +38,7 @@ save_plots = True
 
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None,
-                   vx_scen=None, tx_vx_scen=None, screen_scen=None, indication=None,
+                   vx_scen=None, tx_vx_scen=None, screen_scen=None, ltfu=None, indication=None,
                    save_econ=False, intro_year=None, debug=0, txvx_prods=None, dx_prod=None,
                    multiscale=True, pop_analyzers=False, by_age_analyzers=False):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
@@ -155,7 +155,7 @@ def make_sim_parts(location=None, vaccination_coverage=None,
                                            txvx_prods=txvx_prods, intro_year=intro_year)
 
     if screen_scen is not None:
-        interventions += sp.get_screen_intvs(location, screen_scen, triage_prod=dx_prod)
+        interventions += sp.get_screen_intvs(location, screen_scen, triage_prod=dx_prod, ltfu=ltfu)
 
     return pars, analyzers, interventions
 
