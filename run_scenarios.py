@@ -45,17 +45,17 @@ def make_msims(sims, use_mean=True, save_msims=False):
     
     msim = hpv.MultiSim(sims)
     msim.reduce(use_mean=use_mean)
-    i_vx, i_sc, i_txs, i_inds, i_iys, i_cc, i_s = sims[0].meta.inds
+    i_vx, i_sc, i_txs, i_iys, i_l, i_dx, i_s = sims[0].meta.inds
     for s,sim in enumerate(sims): # Check that everything except seed matches
         assert i_vx   == sim.meta.inds[0]
         assert i_sc   == sim.meta.inds[1]
         assert i_txs  == sim.meta.inds[2]
-        assert i_inds == sim.meta.inds[3]
-        assert i_iys  == sim.meta.inds[4]
-        assert i_cc   == sim.meta.inds[5]
+        assert i_iys == sim.meta.inds[3]
+        assert i_l  == sim.meta.inds[4]
+        assert i_dx   == sim.meta.inds[5]
         assert (s==0) or i_s != sim.meta.inds[6]
     msim.meta = sc.objdict()
-    msim.meta.inds = [i_vx, i_sc, i_txs, i_inds, i_iys, i_cc]
+    msim.meta.inds = [i_vx, i_sc, i_txs, i_iys, i_l, i_dx]
     msim.meta.vals = sc.dcp(sims[0].meta.vals)
     msim.meta.vals.pop('seed')
     
