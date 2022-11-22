@@ -17,6 +17,7 @@ import hpvsim as hpv
 # Imports from this repository
 import run_sim as rs
 import utils as ut
+import pars_scenarios as sp
 
 # Comment out to not run
 to_run = [
@@ -68,8 +69,8 @@ def make_msims(sims, use_mean=True, save_msims=False):
 
 
 def run_scens(location=None, vaccination_coverage=None, # Input data
-              vx_scens=None, screen_scens=None, tx_vx_scens=None, indications=None, intro_years=None, ccuts=None, # Scenarios
-              multiscale=True, debug=0, n_seeds=2, verbose=-1, do_shrink=True, save_econ=False# Sim settings
+              vx_scens=None, screen_scens=None, tx_vx_scens=None, intro_years=None, ltfus=None,
+              dx_prods=None,  multiscale=True, debug=0, n_seeds=2, verbose=-1, do_shrink=True, save_econ=False# Sim settings
               ):
     '''
     Run all scenarios for a given location
@@ -87,22 +88,22 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
     # Set up iteration arguments
     ikw = []
     count = 0
-    n_sims = len(vx_scens) * len(screen_scens) * len(tx_vx_scens) * len(indications) * len(intro_years) * len(ccuts) * n_seeds
+    n_sims = len(vx_scens) * len(screen_scens) * len(tx_vx_scens) * len(intro_years) * len(ltfus) * len(dx_prods) * n_seeds
 
     for i_vx, vx_scen in enumerate(vx_scens): # 2 prophylactic scenrios: baseline or scaleup
         for i_sc, screen_scen in enumerate(screen_scens):  # 2 screening scenarios: baseline or 70/90/70
             for i_txs, tx_vx_scen in enumerate(tx_vx_scens):  # 3 use cases
-                for i_inds, indication in enumerate(indications): # 2 indications
-                    for i_iys, intro_year in enumerate(intro_years): # introduction years
-                        for i_cc, ccut in enumerate(ccuts): # 2 options for lesion growth
+                for i_iys, intro_year in enumerate(intro_years): # introduction years
+                    for i_l, ltfu in enumerate(ltfus): #
+                        for i_dx, dx_prod in enumerate(dx_prods): # 2 options for lesion growth
                             for i_s in range(n_seeds): # n seeds
                                 count += 1
                                 meta = sc.objdict()
                                 meta.count = count
                                 meta.n_sims = n_sims
-                                meta.inds = [i_vx, i_sc, i_txs, i_inds, i_iys, i_cc, i_s]
+                                meta.inds = [i_vx, i_sc, i_txs, i_iys, i_l, i_dx, i_s]
                                 meta.vals = sc.objdict(vx_scen=vx_scen, screen_scen=screen_scen, tx_vx_scen=tx_vx_scen,
-                                                       indication=indication, intro_year=intro_year, ccut=ccut, seed=i_s)
+                                                       ltfu=ltfu, intro_year=intro_year, dx_prod=dx_prod, seed=i_s)
                                 ikw.append(sc.dcp(meta.vals))
                                 ikw[-1].meta = meta
 
@@ -113,54 +114,34 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
     all_sims = sc.parallelize(rs.run_sim, iterkwargs=ikw, kwargs=kwargs)
 
     # Rearrange sims
-    sims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(indications),
-                     len(intro_years), len(ccuts), n_seeds), dtype=object)
+    sims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(intro_years),
+                     len(ltfus), len(dx_prods), n_seeds), dtype=object)
     econdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array
-        i_vx, i_sc, i_txs, i_inds, i_iys, i_cc, i_s = sim.meta.inds
-
-        if save_econ: # Save econ analyzer dataframe if requested
-            econdf = sim.get_analyzer().df
-            econdf['location'] = location
-            vx_scen_label = 'no_vx' if vx_scens[i_vx] is None else vx_scens[i_vx]
-            econdf['vx_scen'] = vx_scen_label
-            econdf['screen_scen'] = screen_scens[i_sc]
-            econdf['progression'] = 'linear' if ccuts[i_cc] else 'fast'
-            tx_vx_scen_label = 'no_txvx' if tx_vx_scens[i_txs] is None else tx_vx_scens[i_txs]
-            econdf['tx_vx_scen'] = tx_vx_scen_label
-            econdf['intro_year'] = intro_years[i_iys]
-            econdf['indication'] = indications[i_inds]
-            econdf['seed'] = i_s
-            econdfs += econdf
-            sim['analyzers'] = [] # Remove the analyzer so we don't need to reduce it
-
-        sims[i_vx, i_sc, i_txs, i_inds, i_iys, i_cc, i_s] = sim
-
-    if save_econ:
-        allecondf = pd.concat(econdfs)
-        allecondf.to_csv(f'{ut.resfolder}/{location}_econ.csv')
+        i_vx, i_sc, i_txs, i_iys, i_l, i_dx, i_s = sim.meta.inds
+        sims[i_vx, i_sc, i_txs, i_iys, i_l, i_dx, i_s] = sim
 
     # Prepare to convert sims to msims
     all_sims_for_multi = []
     for i_vx, vx_scen in enumerate(vx_scens):
         for i_sc, screen_scen in enumerate(screen_scens):
             for i_txs, tx_vx_scen in enumerate(tx_vx_scens):
-                for i_inds, indication in enumerate(indications):
-                    for i_iys, intro_year in enumerate(intro_years):
-                        for i_cc, ccut in enumerate(ccuts):
-                            sim_seeds = sims[i_vx, i_sc, i_txs, i_inds, i_iys, i_cc, :].tolist()
+                for i_iys, intro_year in enumerate(intro_years):
+                    for i_l, ltfu in enumerate(ltfus):
+                        for i_dx, dx_prod in enumerate(dx_prods):
+                            sim_seeds = sims[i_vx, i_sc, i_txs, i_iys, i_l, i_dx, :].tolist()
                             all_sims_for_multi.append(sim_seeds)
 
     # Convert sims to msims
-    msims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(indications), len(intro_years), len(ccuts)), dtype=object)
+    msims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(intro_years), len(ltfus), len(dx_prods)), dtype=object)
     all_msims = sc.parallelize(make_msims, iterarg=all_sims_for_multi)
 
     # Now strip out all the results and place them in a dataframe
     dfs = sc.autolist()
     for msim in all_msims:
-        i_vx, i_sc, i_txs, i_inds, i_iys, i_cc = msim.meta.inds
-        msims[i_vx, i_sc, i_txs, i_inds, i_iys, i_cc] = msim
+        i_vx, i_sc, i_txs, i_iys, i_l, i_dx = msim.meta.inds
+        msims[i_vx, i_sc, i_txs, i_iys, i_l, i_dx] = msim
 
         df = pd.DataFrame()
         df['year']                     = msim.results['year']
@@ -190,11 +171,11 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         vx_scen_label = 'no_vx' if vx_scens[i_vx] is None else vx_scens[i_vx]
         df['vx_scen'] = vx_scen_label
         df['screen_scen'] = screen_scens[i_sc]
-        df['progression'] = 'linear' if ccuts[i_cc] else 'fast'
         tx_vx_scen_label = 'no_txvx' if tx_vx_scens[i_txs] is None else tx_vx_scens[i_txs]
         df['tx_vx_scen'] = tx_vx_scen_label
         df['intro_year'] = intro_years[i_iys]
-        df['indication'] = indications[i_inds]
+        df['ltfu'] = ltfus[i_l]
+        df['dx_prof'] = 'via' if dx_prods[i_dx] is None else 'ave'
         dfs += df
 
     alldf = pd.concat(dfs)
@@ -219,13 +200,15 @@ if __name__ == '__main__':
 
             vx_scens = [None, '90vx_9to14']
             screen_scens = ['0sc_10tx', '70sc_90tx']
-            tx_vx_scens = [None, 'mass_vaccination', 'test_and_vaccinate']
-            progressions = [False, True]
-            indications = ['virologic_clearance', 'lesion_regression']
+            tx_vx_scens = [None, 'mass_vaccination']#, 'test_and_vaccinate']
+            ltfus = [0.3, 0.05]
+            ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
+            dx_prods = [None, ave_prod]
             intro_years=[2030]
             alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens,
-                                     ccuts=progressions, tx_vx_scens=tx_vx_scens, intro_years=intro_years,
-                                     indications=indications, n_seeds=n_seeds, location=location, debug=debug,
+                                     tx_vx_scens=tx_vx_scens, intro_years=intro_years,
+                                     ltfus=ltfus, dx_prods=dx_prods,
+                                     n_seeds=n_seeds, location=location, debug=debug,
                                      save_econ=True)
 
             alldfs += alldf
@@ -252,8 +235,7 @@ if __name__ == '__main__':
                         'screen_scen': '70sc_90tx'
                     },
                 },
-                progression=prog,
-                indication='virologic_clearance',
+
                 tx_vx_scens=['no_txvx', 'mass_vaccination', 'test_and_vaccinate'],
                 debug=debug,
             )
@@ -274,8 +256,7 @@ if __name__ == '__main__':
                         'screen_scen': '70sc_90tx'
                     },
                 },
-                progression=prog,
-                indication='virologic_clearance',
+
                 tx_vx_scens=['mass_vaccination', 'test_and_vaccinate']
             )
 
