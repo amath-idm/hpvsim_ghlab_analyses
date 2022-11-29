@@ -70,7 +70,7 @@ def make_msims(sims, use_mean=True, save_msims=False):
 
 def run_scens(location=None, vaccination_coverage=None, # Input data
               vx_scens=None, screen_scens=None, tx_vx_scens=None, intro_years=None, ltfus=None,
-              dx_prods=None,  multiscale=True, debug=0, n_seeds=2, verbose=-1, do_shrink=True, save_econ=False# Sim settings
+              screen_prods=None,  multiscale=True, debug=0, n_seeds=2, verbose=-1, do_shrink=True, save_econ=False# Sim settings
               ):
     '''
     Run all scenarios for a given location
@@ -88,14 +88,14 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
     # Set up iteration arguments
     ikw = []
     count = 0
-    n_sims = len(vx_scens) * len(screen_scens) * len(tx_vx_scens) * len(intro_years) * len(ltfus) * len(dx_prods) * n_seeds
+    n_sims = len(vx_scens) * len(screen_scens) * len(tx_vx_scens) * len(intro_years) * len(ltfus) * len(screen_prods) * n_seeds
 
     for i_vx, vx_scen in enumerate(vx_scens): # 2 prophylactic scenrios: baseline or scaleup
         for i_sc, screen_scen in enumerate(screen_scens):  # 2 screening scenarios: baseline or 70/90/70
             for i_txs, tx_vx_scen in enumerate(tx_vx_scens):  # 3 use cases
                 for i_iys, intro_year in enumerate(intro_years): # introduction years
                     for i_l, ltfu in enumerate(ltfus): #
-                        for i_dx, dx_prod in enumerate(dx_prods): # 2 options for lesion growth
+                        for i_dx, screen_prod in enumerate(screen_prods): # options for screening
                             for i_s in range(n_seeds): # n seeds
                                 count += 1
                                 meta = sc.objdict()
@@ -103,7 +103,7 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
                                 meta.n_sims = n_sims
                                 meta.inds = [i_vx, i_sc, i_txs, i_iys, i_l, i_dx, i_s]
                                 meta.vals = sc.objdict(vx_scen=vx_scen, screen_scen=screen_scen, tx_vx_scen=tx_vx_scen,
-                                                       ltfu=ltfu, intro_year=intro_year, dx_prod=dx_prod, seed=i_s)
+                                                       ltfu=ltfu, intro_year=intro_year, screen_prod=screen_prod, seed=i_s)
                                 ikw.append(sc.dcp(meta.vals))
                                 ikw[-1].meta = meta
 
@@ -115,7 +115,7 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
 
     # Rearrange sims
     sims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(intro_years),
-                     len(ltfus), len(dx_prods), n_seeds), dtype=object)
+                     len(ltfus), len(screen_prods), n_seeds), dtype=object)
     econdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array
@@ -129,12 +129,12 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
             for i_txs, tx_vx_scen in enumerate(tx_vx_scens):
                 for i_iys, intro_year in enumerate(intro_years):
                     for i_l, ltfu in enumerate(ltfus):
-                        for i_dx, dx_prod in enumerate(dx_prods):
+                        for i_dx, dx_prod in enumerate(screen_prods):
                             sim_seeds = sims[i_vx, i_sc, i_txs, i_iys, i_l, i_dx, :].tolist()
                             all_sims_for_multi.append(sim_seeds)
 
     # Convert sims to msims
-    msims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(intro_years), len(ltfus), len(dx_prods)), dtype=object)
+    msims = np.empty((len(vx_scens), len(screen_scens), len(tx_vx_scens), len(intro_years), len(ltfus), len(screen_prods)), dtype=object)
     all_msims = sc.parallelize(make_msims, iterarg=all_sims_for_multi)
 
     # Now strip out all the results and place them in a dataframe
@@ -175,7 +175,8 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         df['tx_vx_scen'] = tx_vx_scen_label
         df['intro_year'] = intro_years[i_iys]
         df['ltfu'] = ltfus[i_l]
-        df['dx_prod'] = 'via' if dx_prods[i_dx] is None else 'ave'
+        df['primary_screen'] = screen_prods[i_dx][0]
+        df['triage_screen'] = 'no_triage' if screen_prods[i_dx][1] is None else screen_prods[i_dx][1]
         dfs += df
 
     alldf = pd.concat(dfs)
@@ -203,11 +204,11 @@ if __name__ == '__main__':
             tx_vx_scens = [None]#, 'mass_vaccination', 'test_and_vaccinate']
             ltfus = [0.3, 0.05]
             ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
-            dx_prods = [None, ave_prod[0]]
+            screen_prods = [['via', None], [ave_prod[0], None], ['hpv', 'via'], ['hpv', ave_prod[0]]]
             intro_years=[2030]
             alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens,
                                      tx_vx_scens=tx_vx_scens, intro_years=intro_years,
-                                     ltfus=ltfus, dx_prods=dx_prods,
+                                     ltfus=ltfus, screen_prods=screen_prods,
                                      n_seeds=n_seeds, location=location, debug=debug,
                                      save_econ=True)
 
@@ -218,48 +219,6 @@ if __name__ == '__main__':
 
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
-        # for prog in ['linear', 'fast']:
-        #     ut.plot_scens(
-        #         locations=['india', 'nigeria', 'tanzania'],
-        #         background_scens={
-        #             'No scale-up': {
-        #                 'vx_scen' : 'no_vx',
-        #                 'screen_scen': '0sc_10tx'
-        #             },
-        #             '90% vaccine scale-up': {
-        #                 'vx_scen': '90vx_9to14',
-        #                 'screen_scen': '0sc_10tx'
-        #              },
-        #             '90% vaccine, 70% screening, 90% treatment': {
-        #                 'vx_scen': '90vx_9to14',
-        #                 'screen_scen': '70sc_90tx'
-        #             },
-        #         },
-        #
-        #         tx_vx_scens=['no_txvx', 'mass_vaccination', 'test_and_vaccinate'],
-        #         debug=debug,
-        #     )
-        #
-        #     ut.plot_tx_vx_scens(
-        #         locations=['india', 'nigeria', 'tanzania'],
-        #         background_scens={
-        #             'No scale-up': {
-        #                 'vx_scen': 'no_vx',
-        #                 'screen_scen': '0sc_10tx'
-        #             },
-        #             '90% vaccine scale-up': {
-        #                 'vx_scen': '90vx_9to14',
-        #                 'screen_scen': '0sc_10tx'
-        #             },
-        #             '90% vaccine, 70% screening, 90% treatment': {
-        #                 'vx_scen': '90vx_9to14',
-        #                 'screen_scen': '70sc_90tx'
-        #             },
-        #         },
-        #
-        #         tx_vx_scens=['mass_vaccination', 'test_and_vaccinate']
-        #     )
-
         ut.plot_residual_burden(
             locations=['india', 'nigeria', 'tanzania'],
             background_scens={
@@ -269,17 +228,17 @@ if __name__ == '__main__':
                     'ltfu': 0.3,
                     'dx_prod': 'via'
                 },
+                 'POC-HPV+VIA+TA': {
+                    'vx_scen': '90vx_9to14',
+                    'screen_scen': '70sc_90tx',
+                    'ltfu': 0.05,
+                    'dx_prod': 'via'
+                },
                 'HPV+AVE+TA': {
                     'vx_scen': '90vx_9to14',
                     'screen_scen': '70sc_90tx',
                     'ltfu': 0.3,
                     'dx_prod': 'ave'
-                },
-                'POC-HPV+VIA+TA': {
-                    'vx_scen': '90vx_9to14',
-                    'screen_scen': '70sc_90tx',
-                    'ltfu': 0.05,
-                    'dx_prod': 'via'
                 },
                 'POC-HPV+AVE+TA': {
                     'vx_scen': '90vx_9to14',
