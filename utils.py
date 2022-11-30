@@ -49,7 +49,7 @@ def process_country_files(locations, top_results=100, do_save=True):
     return all_calib_pars
 
 
-def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_txvx'):
+def plot_residual_burden(locations=None, background_scens=None):
     '''
     Plot the residual burden of HPV
     '''
