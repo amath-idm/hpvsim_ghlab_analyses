@@ -10,14 +10,30 @@ import pars_data as dp
 
 
 def get_screen_intvs(location, screen_scen=None, screen_prod=None,
-                     start_year=2020, end_year=2040, ltfu=None):
+                     start_year=2020, end_year=2040):
     ''' Make interventions for screening scenarios '''
 
     # Create inputs
-    primary_screen = screen_prod[0] # Primary screening product
-    triage_screen = screen_prod[1]
+    if len(screen_prod)>1:
+        primary_screen = 'hpv' # Primary screening product
+        if 'poc' in screen_prod[0]:
+            ltfu = 0.05
+        else:
+            ltfu = 0.3
+        if isinstance(screen_prod[1], str):
+            triage_screen = screen_prod[1]
+        else:
+            triage_screen = screen_prod[1][0]
+    else:
+        if isinstance(screen_prod[0], str):
+            primary_screen = screen_prod[0]
+        else:
+            primary_screen = screen_prod[0][0]
+        triage_screen = None
+        ltfu = 0.05
+
     screen_ramp = np.arange(start_year, end_year, dtype=int) # Ramp-up years
-    ltfu = ltfu if ltfu else 0.3
+
 
     # Only difference between the two screening scenarios is coverage over 2020-2040
     if screen_scen == '0sc_10tx':
@@ -66,6 +82,15 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
             eligibility=screen_positive,
             label='triage'
         )
+        triage_positive = lambda sim: sim.get_intervention('triage').outcomes['positive']
+        assign_treatment = hpv.routine_triage(
+            start_year=start_year,
+            prob=1.0,
+            annual_prob=False,
+            product='tx_assigner',
+            eligibility=triage_positive,
+            label='tx assigner'
+        )
     else:
         # Assign treatment
         screen_positive = lambda sim: sim.get_intervention('screening').outcomes['positive']
@@ -77,16 +102,6 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
             eligibility=screen_positive,
             label='tx assigner'
         )
-
-    triage_positive = lambda sim: sim.get_intervention('triage').outcomes['positive']
-    assign_treatment = hpv.routine_triage(
-        start_year=start_year,
-        prob=1.0,
-        annual_prob=False,
-        product='tx_assigner',
-        eligibility=triage_positive,
-        label='tx assigner'
-    )
 
     ablation_eligible = lambda sim: sim.get_intervention('tx assigner').outcomes['ablation']
     ablation = hpv.treat_num(
@@ -116,7 +131,10 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
         label='radiation'
     )
 
-    st_intvs = [screening, triage_screening, assign_treatment, ablation, excision, radiation]
+    if triage_screen is not None:
+        st_intvs = [screening, triage_screening, assign_treatment, ablation, excision, radiation]
+    else:
+        st_intvs = [screening, triage_screening, ablation, excision, radiation]
 
     return st_intvs
 

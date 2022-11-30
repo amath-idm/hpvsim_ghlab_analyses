@@ -38,8 +38,8 @@ save_plots = True
 
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None,
-                   vx_scen=None, tx_vx_scen=None, screen_scen=None, ltfu=None, indication=None,
-                   save_econ=False, intro_year=None, debug=0, txvx_prods=None, screen_prod=None,
+                   vx_scen=None, tx_vx_scen=None, screen_scen=None, indication=None,
+                   intro_year=None, debug=0, txvx_prods=None, screen_prod=None,
                    multiscale=True, pop_analyzers=False, by_age_analyzers=False):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
 
@@ -99,10 +99,6 @@ def make_sim_parts(location=None, vaccination_coverage=None,
             )
         ]
 
-    # Save costing analyzer if requested
-    if save_econ:
-        analyzers += an.econ_analyzer()
-
 
     # Interventions, all added as part of specific scenarios
     interventions = []
@@ -155,7 +151,7 @@ def make_sim_parts(location=None, vaccination_coverage=None,
                                            txvx_prods=txvx_prods, intro_year=intro_year)
 
     if screen_scen is not None:
-        interventions += sp.get_screen_intvs(location, screen_scen, screen_prod=screen_prod, ltfu=ltfu)
+        interventions += sp.get_screen_intvs(location, screen_scen, screen_prod=screen_prod)
 
     return pars, analyzers, interventions
 
@@ -171,9 +167,9 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 
 def run_sim(location=None, use_calib_pars=False,
             do_plot=False, save_plots=False, seed=0, vaccination_coverage=None,
-            vx_scen=None, tx_vx_scen=None, screen_scen=None, ltfu=None,
+            vx_scen=None, tx_vx_scen=None, screen_scen=None,
             indication=None, txvx_prods=None, screen_prod=None, intro_year=None,
-            save_econ=None, multiscale=True, debug=0, label=None, meta=None, verbose=0.1, do_shrink=True,
+            multiscale=True, debug=0, label=None, meta=None, verbose=0.1, do_shrink=True,
             do_save=True, pop_analyzers=False, by_age_analyzers=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
 
@@ -187,8 +183,8 @@ def run_sim(location=None, use_calib_pars=False,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage,
-                          vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, ltfu=ltfu, intro_year=intro_year,
-                          indication=indication, save_econ=save_econ, txvx_prods=txvx_prods, screen_prod=screen_prod,
+                          vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, intro_year=intro_year,
+                          indication=indication, txvx_prods=txvx_prods, screen_prod=screen_prod,
                           multiscale=multiscale, debug=debug, pop_analyzers=pop_analyzers, by_age_analyzers=by_age_analyzers)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 

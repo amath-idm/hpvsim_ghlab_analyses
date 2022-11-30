@@ -65,7 +65,7 @@ def make_msims(sims, use_mean=True, save_msims=False):
     return msim
 
 
-def run_scens(location=None, vaccination_coverage=None, # Input data
+def run_scens(location=None, vaccination_coverage=None, ltfu=None, # Input data
               vx_scens=None, screen_scens=None, screen_prods=None,
               multiscale=True, debug=0, n_seeds=2, verbose=-1, do_shrink=True# Sim settings
               ):
@@ -102,7 +102,7 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
 
     # Actually run
     sc.heading(f'Running {len(ikw)} scenario sims...')
-    kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage, debug=debug,
+    kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage, ltfu=ltfu, debug=debug,
                   location=location, multiscale=multiscale, do_shrink=do_shrink)
     all_sims = sc.parallelize(rs.run_sim, iterkwargs=ikw, kwargs=kwargs)
 
@@ -153,27 +153,21 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         df['location'] = location
         vx_scen_label = 'no_vx' if vx_scens[i_vx] is None else vx_scens[i_vx]
         df['vx_scen'] = vx_scen_label
-        df['screen_scen'] = 'no_screen' if screen_scens[i_sc] is None else screen_scens[i_sc]
-        if isinstance(screen_prods[i_dx][0], str):
-            df['primary_screen'] = screen_prods[i_dx][0]
+        df['screen_scen'] = screen_scens[i_sc]
+        df['ltfu'] = ltfu
+        df['primary_screen'] = 'hpv'
+        if isinstance(screen_prods[i_dx][1], str):
+            df['triage_screen'] = 'via'
+            df['sens'] = np.nan
+            df['spec'] = np.nan
+        elif screen_prods[i_dx] is None:
+            df['triage_screen'] = 'no_screen'
             df['sens'] = np.nan
             df['spec'] = np.nan
         else:
-            df['primary_screen'] = 'ave'
-            df['sens'] = screen_prods[i_dx][0][1]['sens']
-            df['spec'] = screen_prods[i_dx][0][1]['spec']
-        if len(screen_prods[i_dx]) > 1:
-            if isinstance(screen_prods[i_dx][1], str):
-                df['triage_screen'] = 'via'
-                df['sens'] = np.nan
-                df['spec'] = np.nan
-            else:
-                df['triage_screen'] = 'ave'
-                df['sens'] = screen_prods[i_dx][1][1]['sens']
-                df['spec'] = screen_prods[i_dx][1][1]['spec']
-        else:
-            df['triage_screen'] = 'no_triage'
-
+            df['triage_screen'] = 'ave'
+            df['sens'] = screen_prods[i_dx][1][1]['sens']
+            df['spec'] = screen_prods[i_dx][1][1]['spec']
         dfs += df
 
     alldf = pd.concat(dfs)
@@ -191,35 +185,17 @@ if __name__ == '__main__':
     #################################################################
     # Run scenarios -- usually on VMs, runs n_seeds in parallel over M scenarios
     if 'run_scenarios' in to_run:
-        filestem = 'screening_results'
+        filestem = 'triage_results'
         alldfs = sc.autolist()
         for location in locations:
-<<<<<<< HEAD
-            filestem = 'scenario_results'
-
-            ltfus = [0.3, 0.05]
-            ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
-            screen_prods = [['via', None], [ave_prod[0], None], ['hpv', 'via'], ['hpv', ave_prod[0]]]
-            intro_years=[2030]
-            alldf, msims = run_scens(intro_years=intro_years,
-                                     ltfus=ltfus, screen_prods=screen_prods,
-                                     n_seeds=n_seeds, location=location, debug=debug,
-                                     save_econ=True)
-
-=======
             vx_scens = ['90vx_9to14']
             screen_scens = ['70sc_90tx']
             ave_prods = sc.autolist()
             for sens, spec in zip([.95, .9], [.55, .7]):
                 ave_prods.append(['hpv', sp.make_AVE(sens=sens, spec=spec)])
-            for sens, spec in zip([.95, .9], [.55, .7]):
-                ave_prods.append(['poc_hpv', sp.make_AVE(sens=sens, spec=spec)])
-            for sens, spec in zip([.9, .82, .62], [.83, .86, .86]):
-                ave_prods.append([sp.make_AVE(sens=sens, spec=spec)])
-            screen_prods = [['via'], ['hpv', 'via'], ['poc_hpv', 'via']] + ave_prods
-            alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens, screen_prods=screen_prods,
+            screen_prods = [['hpv', 'via']] + ave_prods
+            alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens, screen_prods=screen_prods, ltfu=0.3,
                                      n_seeds=n_seeds, location=location, debug=debug)
->>>>>>> main
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)
         bigdf = pd.concat(alldfs)
@@ -228,122 +204,21 @@ if __name__ == '__main__':
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
         ut.plot_residual_burden(
-            filestem='screening',
+            triage=True,
             locations=['india', 'nigeria', 'tanzania'],
             background_scens={
-                'VIA': {
-                    'primary_screen': 'via',
-                    'triage_screen': 'no_triage'
-                },
-                'AVE, 90%/83%': {
-                     'primary_screen': 'ave',
-                     'triage_screen': 'no_triage',
-                     'sens': .9,
-                     'spec': .83
-                },
-                'AVE, 82%/86%': {
-                     'primary_screen': 'ave',
-                     'triage_screen': 'no_triage',
-                     'sens': .82,
-                     'spec': .86
-                },
-                'AVE, 62%/86%': {
-                     'primary_screen': 'ave',
-                     'triage_screen': 'no_triage',
-                     'sens': .62,
-                     'spec': .86
-                },
                 'HPV+VIA': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'via'
+                    'screen_prod': ['hpv','via']
                 },
                  'HPV+AVE, 95%/55%': {
-                     'primary_screen': 'hpv',
-                     'triage_screen': 'ave',
+                     'screen_prod': ['hpv', 'ave'],
                      'sens': .95,
                      'spec': .55
                 },
                 'HPV+AVE, 90%/70%': {
-                     'primary_screen': 'hpv',
-                     'triage_screen': 'ave',
+                    'screen_prod': ['hpv', 'ave'],
                      'sens': .9,
                      'spec': .7
-                },
-                'POC HPV+VIA': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'via'
-                },
-                'POC HPV+AVE, 95%/55%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .95,
-                    'spec': .55
-                },
-                'POC HPV+AVE, 90%/70%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .9,
-                    'spec': .7
-                },
-            }
-        )
-        ut.plot_ICER(
-            filestem='screening',
-            locations=['india', 'nigeria', 'tanzania'],
-            background_scens={
-                'VIA': {
-                    'primary_screen': 'via',
-                    'triage_screen': 'no_triage'
-                },
-                'AVE, 90%/83%': {
-                    'primary_screen': 'ave',
-                    'triage_screen': 'no_triage',
-                    'sens': .9,
-                    'spec': .83
-                },
-                'AVE, 82%/86%': {
-                    'primary_screen': 'ave',
-                    'triage_screen': 'no_triage',
-                    'sens': .82,
-                    'spec': .86
-                },
-                'AVE, 62%/86%': {
-                    'primary_screen': 'ave',
-                    'triage_screen': 'no_triage',
-                    'sens': .62,
-                    'spec': .86
-                },
-                'HPV+VIA': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'via'
-                },
-                'HPV+AVE, 95%/55%': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'ave',
-                    'sens': .95,
-                    'spec': .55
-                },
-                'HPV+AVE, 90%/70%': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'ave',
-                    'sens': .9,
-                    'spec': .7
-                },
-                'POC HPV+VIA': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'via'
-                },
-                'POC HPV+AVE, 95%/55%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .95,
-                    'spec': .55
-                },
-                'POC HPV+AVE, 90%/70%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .9,
-                    'spec': .7
                 },
             }
         )

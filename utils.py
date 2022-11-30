@@ -56,30 +56,34 @@ def plot_residual_burden(locations=None, background_scens=None):
     
     set_font(size=24)
 
-    location_legend = [i.capitalize() for i in locations]
+    results_filestem=f'{filestem}_results'
+    fig_filestem=filestem
+
     try:
-        bigdf = sc.loadobj(f'{resfolder}/scenario_results.obj')
+        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_scenario_results.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
     colors = sc.gridcolors(10)
 
-    for res, reslabel in {'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items():
-        fig, ax = pl.subplots(figsize=(16, 8))
-
+    fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
+    for ir, (res, reslabel) in enumerate({'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
+        ax = axes[ir]
         for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-            vx_scen = background_scen['vx_scen']
-            screen_scen = background_scen['screen_scen']
-            ltfu = background_scen['ltfu']
-            dx_prod = background_scen['dx_prod']
-            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) &
-                       (bigdf.tx_vx_scen == tx_vx_scen) & (bigdf.ltfu == ltfu) &
-                       (bigdf.dx_prod == dx_prod)].groupby('year')[
-                [f'{res}', f'{res}_low', f'{res}_high']].sum()
+            primary_screen = background_scen['primary_screen']
+            triage_screen = background_scen['triage_screen']
+            if primary_screen == 'via' or triage_screen == 'via':
+                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+            else:
+                sens = background_scen['sens']
+                spec = background_scen['spec']
+                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
+                           & (bigdf.spec == spec)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+
             years = np.array(df.index)[50:106]
             best = np.array(df[res])[50:106]
             low = np.array(df[f'{res}_low'])[50:106]
@@ -88,13 +92,79 @@ def plot_residual_burden(locations=None, background_scens=None):
             ax.plot(years, best, color=colors[cn], label=background_scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
-        ax.legend(loc='upper left')
+        if ir:
+            ax.legend(loc='upper left')
         sc.SIticks(ax)
-        ax.set_ylabel(f'{reslabel}')
-        fig.tight_layout()
-        fig_name = f'{figfolder}/residual_{res}.png'
-        sc.savefig(fig_name, dpi=100)
+        ax.set_title(f'{reslabel}')
+    fig.tight_layout()
+    fig_name = f'{figfolder}/{fig_filestem}_health_impact.png'
+    sc.savefig(fig_name, dpi=100)
 
+    return
+
+
+def plot_ICER(locations=None, background_scens=None, filestem='screening'):
+    '''
+    Plot the residual burden of HPV
+    '''
+
+    set_font(size=24)
+    results_filestem=f'{filestem}_results'
+    fig_filestem=filestem
+
+    try:
+        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
+    except:
+        print('bigdf not available, trying to load for each location and generate it')
+        alldfs = sc.autolist()
+        for location in locations:
+            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
+            alldfs += alldf
+        bigdf = pd.concat(alldfs)
+
+    cancers = dict()
+    cancer_deaths = dict()
+    cin_treatments = dict()
+
+    for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
+        primary_screen = background_scen['primary_screen']
+        triage_screen = background_scen['triage_screen']
+        if primary_screen == 'via' or triage_screen == 'via':
+            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[
+                ['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
+        else:
+            sens = background_scen['sens']
+            spec = background_scen['spec']
+            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
+                & (bigdf.spec == spec)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
+
+        cancers[background_scen_label] = np.array(df['total_cancers'])[50:106].sum()
+        cancer_deaths[background_scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
+        cin_treatments[background_scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
+
+    data_for_plot = pd.DataFrame()
+    data_for_plot['scen'] = np.array(list(cancers.keys()))
+    data_for_plot['cases'] = np.array(list(cancers.values()))
+    data_for_plot['deaths'] = np.array(list(cancer_deaths.values()))
+    data_for_plot['cin_txs'] = np.array(list(cin_treatments.values()))
+
+    colors = sc.gridcolors(len(data_for_plot))
+    fig, axes = pl.subplots(1, 2, figsize=(16, 8), sharey=True)
+    grouped = data_for_plot.groupby('scen')
+    for i, (key, group) in enumerate(grouped):
+        group.plot(ax=axes[0], kind='scatter', x='cases', y='cin_txs', label=key, color=colors[i], s=100)
+        group.plot(ax=axes[1], kind='scatter', x='deaths', y='cin_txs', label=key, color=colors[i], s=100)
+
+    axes[0].set_xlabel('Cancer cases')
+    axes[1].set_xlabel('Cancer deaths')
+    axes[0].set_ylabel('CIN treatments')
+    axes[0].get_legend().remove()
+    axes[1].legend(loc='upper center', bbox_to_anchor=(1.65, 0.95), fancybox=True, title='Screening method')
+    sc.SIticks(axes[0])
+    sc.SIticks(axes[1])
+    fig.tight_layout()
+    fig_name = f'{figfolder}/{fig_filestem}_ICER.png'
+    sc.savefig(fig_name, dpi=100)
     return
 
 

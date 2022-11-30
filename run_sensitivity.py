@@ -10,7 +10,7 @@ to run.
 
 import pandas as pd
 import sciris as sc
-import run_scenarios as rsc
+import run_scenarios_general as rsc
 import utils as ut
 
 # Comment out to not run
