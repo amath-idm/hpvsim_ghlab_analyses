@@ -279,7 +279,12 @@ def plot_residual_burden(locations=None, background_scens=None, triage=False):
     cancer_deaths_averted_high = dict()
     cin_treatments_high = dict()
 
-    df = bigdf[(bigdf.primary_screen == 'via')].groupby('year')[
+    if triage:
+        col_name = 'triage_screen'
+    else:
+        col_name = 'primary_screen'
+
+    df = bigdf[(bigdf[col_name] == 'via')].groupby('year')[
         ['total_cancers', f'total_cancers_low', f'total_cancers_high',
          'total_cancer_deaths', f'total_cancer_deaths_low', f'total_cancer_deaths_high',
          'n_cin_treated', f'n_cin_treated_low', f'n_cin_treated_high',
@@ -297,10 +302,17 @@ def plot_residual_burden(locations=None, background_scens=None, triage=False):
     base_cin_treated_high = np.array(df['n_cin_treated_high'])[50:106].sum()
     for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
         screen_prod = background_scen['screen_prod']
+        if triage:
+            assert len(screen_prod) > 1
+            screen_prod = screen_prod[1]
+            col_name = 'triage_screen'
+        else:
+            col_name = 'primary_screen'
+
         if screen_prod != 'via':
             sens = background_scen['sens']
             spec = background_scen['spec']
-            df = bigdf[(bigdf.primary_screen == screen_prod) & (bigdf.sens == sens)
+            df = bigdf[(bigdf[col_name] == screen_prod) & (bigdf.sens == sens)
                        & (bigdf.spec == spec)].groupby('year')[['total_cancers', f'total_cancers_low', f'total_cancers_high',
                  'total_cancer_deaths', f'total_cancer_deaths_low', f'total_cancer_deaths_high',
                  'n_cin_treated', f'n_cin_treated_low', f'n_cin_treated_high',
