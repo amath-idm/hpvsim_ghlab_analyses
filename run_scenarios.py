@@ -194,19 +194,6 @@ if __name__ == '__main__':
         filestem = 'screening_results'
         alldfs = sc.autolist()
         for location in locations:
-<<<<<<< HEAD
-            filestem = 'scenario_results'
-
-            ltfus = [0.3, 0.05]
-            ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
-            screen_prods = [['via', None], [ave_prod[0], None], ['hpv', 'via'], ['hpv', ave_prod[0]]]
-            intro_years=[2030]
-            alldf, msims = run_scens(intro_years=intro_years,
-                                     ltfus=ltfus, screen_prods=screen_prods,
-                                     n_seeds=n_seeds, location=location, debug=debug,
-                                     save_econ=True)
-
-=======
             vx_scens = ['90vx_9to14']
             screen_scens = ['70sc_90tx']
             ave_prods = sc.autolist()
@@ -219,7 +206,6 @@ if __name__ == '__main__':
             screen_prods = [['via'], ['hpv', 'via'], ['poc_hpv', 'via']] + ave_prods
             alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens, screen_prods=screen_prods,
                                      n_seeds=n_seeds, location=location, debug=debug)
->>>>>>> main
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)
         bigdf = pd.concat(alldfs)
