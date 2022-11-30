@@ -14,8 +14,13 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
     ''' Make interventions for screening scenarios '''
 
     # Create inputs
-    primary_screen = screen_prod[0] # Primary screening product
-    triage_screen = screen_prod[1]
+    if isinstance(screen_prod, list):
+        primary_screen = screen_prod[0] # Primary screening product
+        triage_screen = screen_prod[1]
+    else:
+        primary_screen = screen_prod
+        triage_screen = None
+
     screen_ramp = np.arange(start_year, end_year, dtype=int) # Ramp-up years
     ltfu = ltfu if ltfu else 0.3
 

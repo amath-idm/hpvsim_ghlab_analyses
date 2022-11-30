@@ -217,7 +217,7 @@ def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_t
 
     location_legend = [i.capitalize() for i in locations]
     try:
-        bigdf = sc.loadobj(f'{resfolder}/scenario_results.obj')
+        bigdf = sc.loadobj(f'{resfolder}/general_screening_results.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
