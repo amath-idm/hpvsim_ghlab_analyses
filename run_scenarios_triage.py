@@ -96,7 +96,7 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, # Input data
                     meta.count = count
                     meta.n_sims = n_sims
                     meta.inds = [i_vx, i_sc, i_dx, i_s]
-                    meta.vals = sc.objdict(vx_scen=vx_scen, screen_scen=screen_scen, screen_prod=screen_prod if isinstance(screen_prod, str) else screen_prod[0], seed=i_s)
+                    meta.vals = sc.objdict(vx_scen=vx_scen, screen_scen=screen_scen, screen_prod=screen_prod, seed=i_s)
                     ikw.append(sc.dcp(meta.vals))
                     ikw[-1].meta = meta
 
