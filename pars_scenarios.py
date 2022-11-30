@@ -10,22 +10,30 @@ import pars_data as dp
 
 
 def get_screen_intvs(location, screen_scen=None, screen_prod=None,
-                     start_year=2020, end_year=2040, ltfu=None):
+                     start_year=2020, end_year=2040):
     ''' Make interventions for screening scenarios '''
 
     # Create inputs
-    if isinstance(screen_prod, list):
-        primary_screen = screen_prod[0] # Primary screening product
+    if len(screen_prod)>1:
+        primary_screen = 'hpv' # Primary screening product
+        if 'poc' in screen_prod[0]:
+            ltfu = 0.05
+        else:
+            ltfu = 0.3
         if isinstance(screen_prod[1], str):
             triage_screen = screen_prod[1]
         else:
             triage_screen = screen_prod[1][0]
     else:
-        primary_screen = screen_prod
+        if isinstance(screen_prod[0], str):
+            primary_screen = screen_prod[0]
+        else:
+            primary_screen = screen_prod[0][0]
         triage_screen = None
+        ltfu = 0.05
 
     screen_ramp = np.arange(start_year, end_year, dtype=int) # Ramp-up years
-    ltfu = ltfu if ltfu else 0.3
+
 
     # Only difference between the two screening scenarios is coverage over 2020-2040
     if screen_scen == '0sc_10tx':
