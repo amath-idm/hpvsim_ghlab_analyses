@@ -1,5 +1,5 @@
 '''
-Define custom analyzers for HPVsim
+Define custom analyzers for HPVsim for GHlab analyses
 '''
 
 import numpy as np
@@ -7,68 +7,6 @@ import pandas as pd
 import sciris as sc
 import hpvsim as hpv
 
-
-class ScenarioAnalyzer(hpv.Analyzer):
-    '''
-    For saving cancers by single age bucket, year, and country.
-    Primarily used for generating outputs to feed into the IPM tool.
-    '''
-
-    age_bins = np.arange(0,136)
-
-    def __init__(self, *args, location, index_type='simple', **kwargs):
-        super().__init__(*args, **kwargs)
-        self.location = location
-        self.index_type = index_type # Set to 'simple' to just use years as the index, or 'multi' to use location + scenario name as well
-        return
-
-
-    def initialize(self, sim):
-        super().initialize(sim)
-        self.df = pd.DataFrame(0.0, index=pd.Index(sim.yearvec, name='Year'), columns=self.age_bins[:-1])
-        return
-
-
-    def apply(self, sim):
-        for g in range(sim['n_genotypes']):
-            if g == 0:
-                cancerous_today = hpv.true(sim.people.date_cancerous[g,:] == sim.t)
-            else:
-                cancerous_today = np.append(cancerous_today, hpv.true(sim.people.date_cancerous[g,:] == sim.t))
-        self.df.loc[sim.yearvec[sim.t]] = np.histogram(sim.people.age[cancerous_today], self.age_bins)[0]
-        return
-
-
-    def finalize(self, sim):
-        self.df = self.df.multiply(sim.rescale_vec[0]*np.ones_like(sim.tvec), axis=0)  # Adjust outputs by rescale vector - currently assumes rescale factor doesn't change
-        self.df = self.df.groupby(int).sum()   # Group into annual years
-
-        if self.index_type == 'multi':
-            # Prepend simulation/scenario label and location to dataframe
-            idx = self.df.index.to_frame()
-            idx.insert(0, 'Location', self.location)
-            self.df.index = pd.MultiIndex.from_frame(idx)
-        return
-
-    @staticmethod
-    def reduce(analyzers, quantile=None):
-        ''' Create an averaged dataframe from a list of scenario analyzers '''
-
-        # Process inputs for statistical calculations
-        if quantile is None:
-            quantile = 0.5
-
-        # Check that a list of analyzers has been provided
-        if not isinstance(analyzers, list):
-            errormsg = 'ScenarioAnalyzer.reduce() expects a list of ScenarioAnalyzer instances'
-            raise TypeError(errormsg)
-
-        # Initialize the reduced analyzer
-        df = pd.concat([analyzer.df for analyzer in analyzers])
-        by_row_index = df.groupby(df.index)
-        df = by_row_index.quantile(q=quantile)
-
-        return df
 
 
 class econ_analyzer(hpv.Analyzer):
