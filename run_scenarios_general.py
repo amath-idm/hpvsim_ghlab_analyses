@@ -174,19 +174,13 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         df['tx_vx_scen'] = tx_vx_scen_label
         df['intro_year'] = intro_years[i_iys]
         df['ltfu'] = ltfus[i_l]
-        if isinstance(screen_prods[i_dx][0], str):
-            df['primary_screen'] = screen_prods[i_dx][0]
-        elif screen_prods[i_dx][0] is None:
+        if isinstance(screen_prods[i_dx], str):
+            df['primary_screen'] = screen_prods[i_dx]
+        elif screen_prods[i_dx] is None:
             df['primary_screen'] = 'no_screen'
         else:
             df['primary_screen'] = 'ave'
-
-        if isinstance(screen_prods[i_dx][1], str):
-            df['triage_screen'] = screen_prods[i_dx][1]
-        elif screen_prods[i_dx][1] is None:
-            df['triage_screen'] = 'no_triage'
-        else:
-            df['triage_screen'] = 'ave'
+        df['triage_screen'] = 'no_triage'
         dfs += df
 
     alldf = pd.concat(dfs)
@@ -213,8 +207,10 @@ if __name__ == '__main__':
             screen_scens = ['70sc_90tx']
             tx_vx_scens = [None]#, 'mass_vaccination', 'test_and_vaccinate']
             ltfus = [0.3, 0.05]
-            ave_prod = sp.make_AVE(sens=0.9, spec=0.9)
-            screen_prods = [['via', None], [ave_prod[0], None], ['hpv', 'via'], ['hpv', ave_prod[0]]]
+            ave_prods = sc.autolist()
+            for sens, spec in zip([.9, .82, .62], [.83, .86, .86]):
+                ave_prods.append(sp.make_AVE(sens=sens, spec=spec))
+            screen_prods = ['via'] + ave_prods
             intro_years=[2030]
             alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens,
                                      tx_vx_scens=tx_vx_scens, intro_years=intro_years,
