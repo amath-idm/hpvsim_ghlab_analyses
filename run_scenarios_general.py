@@ -203,7 +203,7 @@ if __name__ == '__main__':
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
         ut.plot_residual_burden(
-            locations=['india'],#, 'nigeria', 'tanzania'],
+            locations=['india', 'nigeria', 'tanzania'],
             background_scens={
                 'VIA': {
                     'screen_prod': 'via'
