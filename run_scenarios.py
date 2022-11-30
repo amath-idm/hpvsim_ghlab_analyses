@@ -32,7 +32,7 @@ locations = [
     'tanzania', # 2
 ]
 
-debug = True
+debug = False
 n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
 
 
@@ -144,9 +144,9 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         df['n_screened']               = msim.results['n_screened'][:]
         df['n_screened_low']           = msim.results['n_screened'].low
         df['n_screened_high']          = msim.results['n_screened'].high
-        df['n_cin_treated']            = msim.results['n_cin_treated'][:]
-        df['n_cin_treated_low']        = msim.results['n_cin_treated'].low
-        df['n_cin_treated_high']       = msim.results['n_cin_treated'].high
+        # df['n_cin_treated']            = msim.results['n_cin_treated'][:]
+        # df['n_cin_treated_low']        = msim.results['n_cin_treated'].low
+        # df['n_cin_treated_high']       = msim.results['n_cin_treated'].high
         df['n_vaccinated']             = msim.results['n_vaccinated'][:]
         df['n_vaccinated_low']         = msim.results['n_vaccinated'].low
         df['n_vaccinated_high']        = msim.results['n_vaccinated'].high
@@ -154,7 +154,14 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
         vx_scen_label = 'no_vx' if vx_scens[i_vx] is None else vx_scens[i_vx]
         df['vx_scen'] = vx_scen_label
         df['screen_scen'] = 'no_screen' if screen_scens[i_sc] is None else screen_scens[i_sc]
-        df['primary_screen'] = screen_prods[i_dx][0]
+        if isinstance(screen_prods[i_dx][0], str):
+            df['primary_screen'] = screen_prods[i_dx][0]
+            df['sens'] = np.nan
+            df['spec'] = np.nan
+        else:
+            df['primary_screen'] = 'ave'
+            df['sens'] = screen_prods[i_dx][1][1]['sens']
+            df['spec'] = screen_prods[i_dx][1][1]['spec']
         if len(screen_prods[i_dx]) > 1:
             if isinstance(screen_prods[i_dx][1], str):
                 df['triage_screen'] = 'via'
@@ -166,8 +173,6 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
                 df['spec'] = screen_prods[i_dx][1][1]['spec']
         else:
             df['triage_screen'] = 'no_triage'
-            df['sens'] = np.nan
-            df['spec'] = np.nan
 
         dfs += df
 
