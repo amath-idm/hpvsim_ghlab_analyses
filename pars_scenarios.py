@@ -16,7 +16,10 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
     # Create inputs
     if isinstance(screen_prod, list):
         primary_screen = screen_prod[0] # Primary screening product
-        triage_screen = screen_prod[1][0]
+        if isinstance(screen_prod[1], str):
+            triage_screen = screen_prod[1]
+        else:
+            triage_screen = screen_prod[1][0]
     else:
         primary_screen = screen_prod
         triage_screen = None
