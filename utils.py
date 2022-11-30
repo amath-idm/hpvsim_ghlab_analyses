@@ -208,7 +208,7 @@ def plot_calib_pars(locations=None, to_plot=None, do_save=True):
     return
 
 
-def plot_residual_burden(locations=None, background_scens=None):
+def plot_residual_burden(locations=None, background_scens=None, triage=False):
     '''
     Plot the residual burden of HPV
     '''
@@ -216,13 +216,20 @@ def plot_residual_burden(locations=None, background_scens=None):
     set_font(size=24)
 
     location_legend = [i.capitalize() for i in locations]
+    if triage:
+        results_filestem='triage_results'
+        fig_filestem='triage'
+    else:
+        results_filestem = 'general_screening_results'
+        fig_filestem = 'general_screening'
+
     try:
-        bigdf = sc.loadobj(f'{resfolder}/general_screening_results.obj')
+        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_general_screening_results.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
     colors = sc.gridcolors(10)
@@ -232,12 +239,18 @@ def plot_residual_burden(locations=None, background_scens=None):
         ax = axes[ir]
         for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
             screen_prod = background_scen['screen_prod']
+            if triage:
+                assert len(screen_prod) > 1
+                screen_prod = screen_prod[1]
+                col_name = 'triage_screen'
+            else:
+                col_name = 'primary_screen'
             if screen_prod == 'via':
-                df = bigdf[(bigdf.primary_screen == screen_prod)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+                df = bigdf[(bigdf[col_name] == screen_prod)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
             else:
                 sens = background_scen['sens']
                 spec = background_scen['spec']
-                df = bigdf[(bigdf.primary_screen == screen_prod) & (bigdf.sens == sens)
+                df = bigdf[(bigdf[col_name] == screen_prod) & (bigdf.sens == sens)
                            & (bigdf.spec == spec)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
 
             years = np.array(df.index)[50:106]
@@ -253,7 +266,7 @@ def plot_residual_burden(locations=None, background_scens=None):
         sc.SIticks(ax)
         ax.set_title(f'{reslabel}')
     fig.tight_layout()
-    fig_name = f'{figfolder}/general_screening_health_impact.png'
+    fig_name = f'{figfolder}/{fig_filestem}_health_impact.png'
     sc.savefig(fig_name, dpi=100)
 
     cancers_averted = dict()
@@ -320,7 +333,7 @@ def plot_residual_burden(locations=None, background_scens=None):
     sc.SIticks(axes[0])
     sc.SIticks(axes[1])
     fig.tight_layout()
-    fig_name = f'{figfolder}/general_screening_NNT.png'
+    fig_name = f'{figfolder}/{fig_filestem}_NNT.png'
     sc.savefig(fig_name, dpi=100)
     return
 

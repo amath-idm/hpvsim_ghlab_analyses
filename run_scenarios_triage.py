@@ -157,7 +157,7 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, # Input data
         df['ltfu'] = ltfu
         df['primary_screen'] = 'hpv'
         if isinstance(screen_prods[i_dx][1], str):
-            df['triage_screen'] = screen_prods[i_dx][1]
+            df['triage_screen'] = 'via'
             df['sens'] = np.nan
             df['spec'] = np.nan
         elif screen_prods[i_dx] is None:
@@ -193,7 +193,7 @@ if __name__ == '__main__':
             ave_prods = sc.autolist()
             for sens, spec in zip([.95, .9], [.55, .7]):
                 ave_prods.append(['hpv', sp.make_AVE(sens=sens, spec=spec)])
-            screen_prods = ['hpv', 'via'] + ave_prods
+            screen_prods = [['hpv', 'via']] + ave_prods
             alldf, msims = run_scens(screen_scens=screen_scens, vx_scens=vx_scens, screen_prods=screen_prods, ltfu=0.3,
                                      n_seeds=n_seeds, location=location, debug=debug)
             alldfs += alldf
@@ -204,25 +204,21 @@ if __name__ == '__main__':
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
         ut.plot_residual_burden(
+            triage=True,
             locations=['india', 'nigeria', 'tanzania'],
             background_scens={
-                'VIA': {
-                    'screen_prod': 'via'
+                'HPV+VIA': {
+                    'screen_prod': ['hpv','via']
                 },
-                 'AVE, 90%/83%': {
-                     'screen_prod': 'ave',
+                 'HPV+AVE, 95%/55%': {
+                     'screen_prod': ['hpv', 'ave'],
+                     'sens': .95,
+                     'spec': .55
+                },
+                'HPV+AVE, 90%/70%': {
+                    'screen_prod': ['hpv', 'ave'],
                      'sens': .9,
-                     'spec': .83
-                },
-                'AVE, 82%/86%': {
-                    'screen_prod': 'ave',
-                     'sens': .82,
-                     'spec': .86
-                },
-                'AVE, 62%/86%': {
-                    'screen_prod': 'ave',
-                     'sens': .62,
-                     'spec': .86
+                     'spec': .7
                 },
             }
         )
