@@ -208,7 +208,7 @@ def plot_calib_pars(locations=None, to_plot=None, do_save=True):
     return
 
 
-def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_txvx'):
+def plot_residual_burden(locations=None, background_scens=None):
     '''
     Plot the residual burden of HPV
     '''
@@ -222,23 +222,24 @@ def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_t
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_scenario_results.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_general_screening_results.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
     colors = sc.gridcolors(10)
 
-    for res, reslabel in {'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items():
-        fig, ax = pl.subplots(figsize=(16, 8))
-
+    fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
+    for ir, (res, reslabel) in enumerate({'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
+        ax = axes[ir]
         for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-            vx_scen = background_scen['vx_scen']
-            screen_scen = background_scen['screen_scen']
-            ltfu = background_scen['ltfu']
-            dx_prod = background_scen['dx_prod']
-            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) &
-                       (bigdf.tx_vx_scen == tx_vx_scen) & (bigdf.ltfu == ltfu) &
-                       (bigdf.dx_prod == dx_prod)].groupby('year')[
-                [f'{res}', f'{res}_low', f'{res}_high']].sum()
+            screen_prod = background_scen['screen_prod']
+            if screen_prod == 'via':
+                df = bigdf[(bigdf.primary_screen == screen_prod)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+            else:
+                sens = background_scen['sens']
+                spec = background_scen['spec']
+                df = bigdf[(bigdf.primary_screen == screen_prod) & (bigdf.sens == sens)
+                           & (bigdf.spec == spec)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+
             years = np.array(df.index)[50:106]
             best = np.array(df[res])[50:106]
             low = np.array(df[f'{res}_low'])[50:106]
@@ -247,349 +248,82 @@ def plot_residual_burden(locations=None, background_scens=None, tx_vx_scen='no_t
             ax.plot(years, best, color=colors[cn], label=background_scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
-        ax.legend(loc='upper left')
+        if ir:
+            ax.legend(loc='upper left')
         sc.SIticks(ax)
-        ax.set_ylabel(f'{reslabel}')
-        fig.tight_layout()
-        fig_name = f'{figfolder}/residual_{res}.png'
-        sc.savefig(fig_name, dpi=100)
+        ax.set_title(f'{reslabel}')
+    fig.tight_layout()
+    fig_name = f'{figfolder}/general_screening_health_impact.png'
+    sc.savefig(fig_name, dpi=100)
 
-    return
+    cancers_averted = dict()
+    cancer_deaths_averted = dict()
+    cin_treatments = dict()
+    cancers_averted_low = dict()
+    cancer_deaths_averted_low = dict()
+    cin_treatments_low = dict()
+    cancers_averted_high = dict()
+    cancer_deaths_averted_high = dict()
+    cin_treatments_high = dict()
 
+    df = bigdf[(bigdf.primary_screen == 'via')].groupby('year')[
+        ['total_cancers', f'total_cancers_low', f'total_cancers_high',
+         'total_cancer_deaths', f'total_cancer_deaths_low', f'total_cancer_deaths_high',
+         'n_cin_treated', f'n_cin_treated_low', f'n_cin_treated_high',
+         ]].sum()
+    base_cancers = np.array(df['total_cancers'])[50:106].sum()
+    base_cancers_low = np.array(df['total_cancers_low'])[50:106].sum()
+    base_cancers_high = np.array(df['total_cancers_high'])[50:106].sum()
 
-def plot_tx_vx_scens(locations=None, background_scens=None, tx_vx_scens=None, progression=None, indication=None):
-    '''
-    Plot therapeutic vaccine scenarios
-    '''
-    
-    set_font(size=20)
+    base_cancer_deaths = np.array(df['total_cancer_deaths'])[50:106].sum()
+    base_cancer_deaths_low = np.array(df['total_cancer_deaths_low'])[50:106].sum()
+    base_cancer_deaths_high = np.array(df['total_cancer_deaths_high'])[50:106].sum()
 
-    try:
-        bigdf = sc.loadobj(f'{resfolder}/scenario_results.obj')
-    except:
-        print('bigdf not available, trying to load for each location and generate it')
-        alldfs = sc.autolist()
-        for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_scenario_results.obj')
-            alldfs += alldf
-        bigdf = pd.concat(alldfs)
-
-    if progression is None: progression = 'fast'
-    if indication is None: indication = 'virologic_clearance'
-
-    tx_vx_scen_labels = ['Routine vaccination', 'Test and vaccinate']
-    
-    # Start creating plot
-    table_data_cases  = pd.DataFrame(columns=tx_vx_scens, index=list(background_scens.keys())) # TODO: see if these can be pulled out to avoid duplication
-    table_data_deaths = pd.DataFrame(columns=tx_vx_scens, index=list(background_scens.keys()))
-    table_nnv_cases   = pd.DataFrame(columns=tx_vx_scens, index=list(background_scens.keys()))
-    table_nnv_deaths  = pd.DataFrame(columns=tx_vx_scens, index=list(background_scens.keys()))
-
+    base_cin_treated = np.array(df['n_cin_treated'])[50:106].sum()
+    base_cin_treated_low = np.array(df['n_cin_treated_low'])[50:106].sum()
+    base_cin_treated_high = np.array(df['n_cin_treated_high'])[50:106].sum()
     for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-        vx_scen = background_scen['vx_scen']
-        screen_scen = background_scen['screen_scen']
+        screen_prod = background_scen['screen_prod']
+        if screen_prod != 'via':
+            sens = background_scen['sens']
+            spec = background_scen['spec']
+            df = bigdf[(bigdf.primary_screen == screen_prod) & (bigdf.sens == sens)
+                       & (bigdf.spec == spec)].groupby('year')[['total_cancers', f'total_cancers_low', f'total_cancers_high',
+                 'total_cancer_deaths', f'total_cancer_deaths_low', f'total_cancer_deaths_high',
+                 'n_cin_treated', f'n_cin_treated_low', f'n_cin_treated_high',
+                 ]].sum()
+            cancers_averted[background_scen_label] = base_cancers - np.array(df['total_cancers'])[50:106].sum()
+            cancer_deaths_averted[background_scen_label] = base_cancer_deaths - np.array(df['total_cancer_deaths'])[50:106].sum()
+            cin_treatments[background_scen_label] = np.array(df['n_cin_treated'])[50:106].sum() - base_cin_treated
 
-        base_df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (
-                bigdf.progression == progression) & (bigdf.tx_vx_scen == 'no_txvx') &
-                        (bigdf.indication == indication)].groupby('year')[
-            ['total_cancers', 'total_cancer_deaths', 'n_tx_vaccinated']].sum()
-        base_cancers = np.array(base_df['total_cancers'])[50:106].sum()
-        base_cancer_deaths = np.array(base_df['total_cancer_deaths'])[50:106].sum()
-        for tx_vx_scen in tx_vx_scens:
-            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (
-                    bigdf.progression == progression) & (bigdf.tx_vx_scen == tx_vx_scen) &
-                       (bigdf.indication == indication)].groupby('year')[
-                ['total_cancers', 'total_cancer_deaths', 'n_tx_vaccinated']].sum()
-            cancers_scen = np.array(df['total_cancers'])[50:106].sum()
-            cancer_deaths_scen = np.array(df['total_cancer_deaths'])[50:106].sum()
-            vaccinated = np.array(df['n_tx_vaccinated'])[50:106].sum()
+            cancers_averted_low[background_scen_label] = base_cancers_low - np.array(df['total_cancers_low'])[50:106].sum()
+            cancer_deaths_averted_low[background_scen_label] = base_cancer_deaths_low - np.array(df['total_cancer_deaths_low'])[50:106].sum()
+            cin_treatments_low[background_scen_label] = np.array(df['n_cin_treated_low'])[50:106].sum() - base_cin_treated_low
 
-            cancers_averted = base_cancers - cancers_scen
-            cancer_deaths_averted = base_cancer_deaths - cancer_deaths_scen
-            NNV_cases = vaccinated / cancers_averted #/ 1000
-            NNV_deaths = vaccinated / cancer_deaths_averted  # / 1000
-            table_data_cases.loc[background_scen_label, tx_vx_scen] = cancers_averted
-            table_data_deaths.loc[background_scen_label, tx_vx_scen] = cancer_deaths_averted
-            table_nnv_cases.loc[background_scen_label, tx_vx_scen] = NNV_cases
-            table_nnv_deaths.loc[background_scen_label, tx_vx_scen] = NNV_deaths
+            cancers_averted_high[background_scen_label] = base_cancers_high - np.array(df['total_cancers_high'])[50:106].sum()
+            cancer_deaths_averted_high[background_scen_label] = base_cancer_deaths_high - np.array(df['total_cancer_deaths_high'])[50:106].sum()
+            cin_treatments_high[background_scen_label] = np.array(df['n_cin_treated_high'])[50:106].sum() - base_cin_treated_high
 
-    table_nnv_deaths[table_nnv_deaths < 0] = np.nan
-    table_nnv_cases[table_nnv_cases < 0] = np.nan
-    fig, ax = pl.subplots(1,2, figsize=(16,8))
-    colors=sc.gridcolors(10)
-    table_nnv_cases.transpose().plot(kind='bar', ax=ax[0], color=colors)
-    sc.SIticks(ax[0])
-    ax[0].set_title('NNV to avert a cervical cancer case')
-    ax[0].set_xticklabels(tx_vx_scen_labels, rotation=0)
-    table_nnv_deaths.transpose().plot(kind='bar', ax=ax[1], color=colors)
-    sc.SIticks(ax[1])
-    ax[1].set_title('NNV to avert a cervical cancer death')
-    ax[1].set_xticklabels(tx_vx_scen_labels, rotation = 0)
-    ax[0].get_legend().remove()
-    ax[1].legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Background 3-pillars', fontsize=16)
+    nnt_cases = np.array(list(cin_treatments.values())) / np.array(list(cancers_averted.values()))
+    nnt_deaths = np.array(list(cin_treatments.values())) / np.array(list(cancer_deaths_averted.values()))
+    nnt_cases_low = np.array(list(cin_treatments_low.values())) / np.array(list(cancers_averted_low.values()))
+    nnt_cases_high = np.array(list(cin_treatments_high.values())) / np.array(list(cancers_averted_high.values()))
+    nnt_deaths_low = np.array(list(cin_treatments_low.values())) / np.array(list(cancer_deaths_averted_low.values()))
+    nnt_deaths_high = np.array(list(cin_treatments_high.values())) / np.array(list(cancer_deaths_averted_high.values()))
 
+    fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
+    scen_labels = cancers_averted.keys()
+    axes[0].bar(scen_labels, nnt_cases, yerr = np.absolute(nnt_cases_low - nnt_cases_high))
+    axes[0].set_title('Ablations per case averted (relative to VIA)')
+    axes[1].bar(scen_labels, nnt_deaths, yerr = np.absolute(nnt_deaths_low - nnt_deaths_high))
+    axes[1].set_title('Ablations per death averted (relative to VIA)')
+    sc.SIticks(axes[0])
+    sc.SIticks(axes[1])
     fig.tight_layout()
-    fig_name = f'{figfolder}/txvx_nnv_{progression}_prog_{indication}.png'
-    sc.savefig(fig_name, dpi=100)
-
-    fig, ax = pl.subplots(1, 2, figsize=(16, 8))
-    colors = sc.gridcolors(10)
-    table_data_cases.transpose().plot(kind='bar', ax=ax[0], color=colors)
-    sc.SIticks(ax[0])
-    ax[0].set_title('Cervical cancer cases averted')
-    ax[0].set_xticklabels(tx_vx_scen_labels, rotation=0)
-    table_data_deaths.transpose().plot(kind='bar', ax=ax[1], color=colors)
-    sc.SIticks(ax[1])
-    ax[1].set_title('Cervical cancer deaths averted')
-    ax[1].set_xticklabels(tx_vx_scen_labels, rotation=0)
-    ax[0].get_legend().remove()
-    ax[1].legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Background 3-pillars', fontsize=16)
-
-    fig.tight_layout()
-    fig_name = f'{figfolder}/txvx_impact_{progression}_prog_{indication}.png'
-    sc.savefig(fig_name, dpi=100)
-
-    return
-
-
-def plot_tx_vx_scens_sens(locations=None, tx_vx_scens=None, progression=None, sens_backgrounds=None, intro_year=2030):
-    '''
-    Plot sensitivity for therapeutic vaccine scenarios
-    '''
-    
-    set_font(size=20)
-
-    alldfs = sc.autolist()
-    for location in locations:
-        alldf = sc.loadobj(f'{resfolder}/{location}_sensitivity_results.obj')
-        alldfs += alldf
-    bigdf = pd.concat(alldfs)
-
-    if progression is None: progression = 'fast'
-
-    # Start creating plot
-    table_data_cases = pd.DataFrame(columns=tx_vx_scens, index=list(sens_backgrounds.keys()))
-    table_data_deaths = pd.DataFrame(columns=tx_vx_scens, index=list(sens_backgrounds.keys()))
-    table_nnv_cases = pd.DataFrame(columns=tx_vx_scens, index=list(sens_backgrounds.keys()))
-    table_nnv_deaths = pd.DataFrame(columns=tx_vx_scens, index=list(sens_backgrounds.keys()))
-
-    for cn, (background_scen_label, background_scen) in enumerate(sens_backgrounds.items()):
-        vx_scen = background_scen['vx_scen']
-        screen_scen = background_scen['screen_scen']
-
-        base_df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (
-                bigdf.progression == progression) & (bigdf.tx_vx_scen == 'no_txvx') & (bigdf.intro_year == intro_year)].groupby('year')[
-            ['total_cancers', 'total_cancer_deaths', 'n_tx_vaccinated']].sum()
-        base_cancers = np.array(base_df['total_cancers'])[50:106].sum()
-        base_cancer_deaths = np.array(base_df['total_cancer_deaths'])[50:106].sum()
-        for tx_vx_scen in tx_vx_scens:
-            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (
-                    bigdf.progression == progression) & (bigdf.tx_vx_scen == tx_vx_scen) & (bigdf.intro_year == intro_year)].groupby('year')[
-                ['total_cancers', 'total_cancer_deaths', 'n_tx_vaccinated']].sum()
-            cancers_scen = np.array(df['total_cancers'])[50:106].sum()
-            cancer_deaths_scen = np.array(df['total_cancer_deaths'])[50:106].sum()
-            vaccinated = np.array(df['n_tx_vaccinated'])[50:106].sum()
-
-            cancers_averted = base_cancers - cancers_scen
-            cancer_deaths_averted = base_cancer_deaths - cancer_deaths_scen
-            NNV_cases = vaccinated / cancers_averted #/ 1000
-            NNV_deaths = vaccinated / cancer_deaths_averted  # / 1000
-            table_data_cases.loc[background_scen_label, tx_vx_scen] = cancers_averted
-            table_data_deaths.loc[background_scen_label, tx_vx_scen] = cancer_deaths_averted
-            table_nnv_cases.loc[background_scen_label, tx_vx_scen] = NNV_cases
-            table_nnv_deaths.loc[background_scen_label, tx_vx_scen] = NNV_deaths
-
-    table_nnv_deaths[table_nnv_deaths < 0] = np.nan
-    table_nnv_cases[table_nnv_cases < 0] = np.nan
-    fig, ax = pl.subplots(1, 2, figsize=(16, 8))
-    colors = sc.gridcolors(10)[4:]
-    table_nnv_cases.plot(kind='bar', ax=ax[0], color=colors)
-    sc.SIticks(ax[0])
-    ax[0].set_title('NNV to avert a cervical cancer case')
-    ax[0].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[0].set_xlabel('Screen coverage by 2040 (%)')
-    table_nnv_deaths.plot(kind='bar', ax=ax[1], color=colors)
-    sc.SIticks(ax[1])
-    ax[1].set_title('NNV to avert a cervical cancer death')
-    ax[1].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[1].set_xlabel('Screen coverage by 2040 (%)')
-    ax[0].get_legend().remove()
-    ax[1].legend(loc='center left', bbox_to_anchor=(1, 0.5), title='TxVx Delivery', fontsize=16)
-
-    fig.tight_layout()
-    fig_name = f'{figfolder}/txvx_nnv_{progression}_prog_sensitivity.png'
-    sc.savefig(fig_name, dpi=100)
-
-    fig, ax = pl.subplots(1, 2, figsize=(16, 8))
-    table_data_cases.plot(kind='bar', ax=ax[0], color=colors)
-    sc.SIticks(ax[0])
-    ax[0].set_title('Cervical cancer cases averted')
-    ax[0].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[0].set_xlabel('Screen coverage by 2040 (%)')
-    table_data_deaths.plot(kind='bar', ax=ax[1], color=colors)
-    sc.SIticks(ax[1])
-    ax[1].set_title('Cervical cancer deaths averted')
-    ax[1].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[1].set_xlabel('Screen coverage by 2040 (%)')
-    ax[0].get_legend().remove()
-    ax[1].legend(loc='center left', bbox_to_anchor=(1, 0.5), title='TxVx Delivery', fontsize=16)
-
-    fig.tight_layout()
-    fig_name = f'{figfolder}/txvx_impact_{progression}_prog_sensitivity.png'
+    fig_name = f'{figfolder}/general_screening_NNT.png'
     sc.savefig(fig_name, dpi=100)
     return
 
-
-def plot_tx_vx_sens_cov_intro(locations=None, tx_vx_scen=None, progression=None, 
-                              sens_backgrounds=None, intro_years=None):
-    '''
-    Plot sensitivity in coverage for therapeutic vaccine scenarios
-    '''
-
-    set_font(size=20)
-
-    alldfs = sc.autolist()
-    for location in locations:
-        alldf = sc.loadobj(f'{resfolder}/{location}_sensitivity_results.obj')
-        alldfs += alldf
-    bigdf = pd.concat(alldfs)
-
-    if progression is None: progression = 'fast'
-
-    table_data_cases = pd.DataFrame(columns=intro_years, index=list(sens_backgrounds.keys()))
-    table_data_deaths = pd.DataFrame(columns=intro_years, index=list(sens_backgrounds.keys()))
-    table_nnv_cases = pd.DataFrame(columns=intro_years, index=list(sens_backgrounds.keys()))
-    table_nnv_deaths = pd.DataFrame(columns=intro_years, index=list(sens_backgrounds.keys()))
-
-    for background_scen_label, background_scen in sens_backgrounds.items():
-        vx_scen = background_scen['vx_scen']
-        screen_scen = background_scen['screen_scen']
-
-        base_df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (
-                bigdf.progression == progression) & (bigdf.tx_vx_scen == 'no_txvx') & (
-                                    bigdf.intro_year == 2030)].groupby('year')[
-            ['total_cancers', 'total_cancer_deaths', 'n_tx_vaccinated']].sum()
-        base_cancers = np.array(base_df['total_cancers'])[50:106].sum()
-        base_cancer_deaths = np.array(base_df['total_cancer_deaths'])[50:106].sum()
-        for intro_year in intro_years:
-            df = bigdf[(bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (
-                    bigdf.progression == progression) & (bigdf.tx_vx_scen == tx_vx_scen)
-                       & (bigdf.intro_year == intro_year)].groupby('year')[
-                ['total_cancers', 'total_cancer_deaths', 'n_tx_vaccinated']].sum()
-            cancers_scen = np.array(df['total_cancers'])[50:106].sum()
-            cancer_deaths_scen = np.array(df['total_cancer_deaths'])[50:106].sum()
-            vaccinated = np.array(df['n_tx_vaccinated'])[50:106].sum()
-            cancers_averted = base_cancers - cancers_scen
-            cancer_deaths_averted = base_cancer_deaths - cancer_deaths_scen
-            NNV_cases = vaccinated / cancers_averted
-            NNV_deaths = vaccinated / cancer_deaths_averted
-            table_data_cases.loc[background_scen_label, intro_year] = cancers_averted
-            table_data_deaths.loc[background_scen_label, intro_year] = cancer_deaths_averted
-            table_nnv_cases.loc[background_scen_label, intro_year] = NNV_cases
-            table_nnv_deaths.loc[background_scen_label, intro_year] = NNV_deaths
-
-    table_nnv_deaths[table_nnv_deaths < 0] = np.nan
-    table_nnv_cases[table_nnv_cases < 0] = np.nan
-    fig, ax = pl.subplots(2, 2, figsize=(16, 12))
-    colors = sc.gridcolors(10)[6:]
-    table_data_cases.plot(kind='bar', ax=ax[0,0], color=colors)
-    sc.SIticks(ax[0,0])
-    ax[0,0].set_title('Cervical cancer cases averted')
-    ax[0,0].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[0,0].set_xlabel('Screen coverage by 2040 (%)')
-    table_data_deaths.plot(kind='bar', ax=ax[0,1], color=colors)
-    sc.SIticks(ax[0,1])
-    ax[0,1].set_title('Cervical cancer deaths averted')
-    ax[0,1].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[0,1].set_xlabel('Screen coverage by 2040 (%)')
-    ax[0,0].get_legend().remove()
-    ax[0,1].legend(loc='center left', bbox_to_anchor=(1, 0.5), title='TxVx Intro Year', fontsize=16)
-
-    table_nnv_cases.plot(kind='bar', ax=ax[1, 0], color=colors)
-    sc.SIticks(ax[1, 0])
-    ax[1, 0].set_title('NNV to avert a cervical cancer case')
-    ax[1, 0].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[1, 0].set_xlabel('Screen coverage by 2040 (%)')
-    table_nnv_deaths.plot(kind='bar', ax=ax[1, 1], color=colors)
-    sc.SIticks(ax[1, 1])
-    ax[1, 1].set_title('NNV to avert a cervical cancer death')
-    ax[1, 1].set_xticklabels(sens_backgrounds.keys(), rotation=0)
-    ax[1, 1].set_xlabel('Screen coverage by 2040 (%)')
-    ax[1, 0].get_legend().remove()
-    ax[1, 1].get_legend().remove()
-
-    fig.suptitle(f'Health impact and efficiency of {tx_vx_scen} TxVx\nby screen coverage and introduction year')
-    fig.tight_layout()
-    fig_name = f'{figfolder}/txvx_impact_2waysens_{tx_vx_scen}_{progression}_prog.png'
-    sc.savefig(fig_name, dpi=100)
-    return
-
-
-def plot_scens(locations=None, background_scens=None, tx_vx_scens=None, progression=None, indication=None, debug=False):
-    '''
-    Plot overall scenarios
-    '''
-    
-    set_font(size=24)
-
-    background_scen_tags = {
-        'No scale-up': 'baseline',
-        '90% vaccine scale-up': '90vx_0sc_10tx',
-        '90% vaccine, 70% screening, 90% treatment': '90vx_70sc_90tx'
-    }
-
-    try:
-        bigdf = sc.loadobj(f'{resfolder}/scenario_results.obj')
-    except:
-        print('bigdf not available, trying to load for each location and generate it')
-        alldfs = sc.autolist()
-        for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_scenario_results.obj')
-            alldfs += alldf
-        bigdf = pd.concat(alldfs)
-
-    if progression is None: progression = 'fast'
-    if indication is None: indication = 'virologic_clearance'
-
-    whattoplot = {'total_cancers':'Annual cases of cervical cancer', 'asr_cancer':'Age-standardized incidence of cervical cancer', 'n_tx_vaccinated': 'Total tx vaccinated'}
-    tx_vx_scen_labels = {
-        'no_txvx': 'None',
-        'mass_vaccination': 'Routine/campaign delivery',
-        'test_and_vaccinate': 'Test and vaccinate'
-    }
-    # Start creating plot
-    timepoints = np.arange(50, 106) if not debug else np.arange(20,76) # Define a subset of timepoints to plot # TODO: remove hardcoding
-    for res,reslabel in whattoplot.items():
-        colors = sc.gridcolors(10)
-        for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-            fig, ax = pl.subplots(figsize=(16, 8))
-            ci = 0
-            sc.SIticks(ax)
-            ax.set_title(f'{background_scen_label}')
-            ax.set_ylabel(f'{reslabel}')
-            vx_scen = background_scen['vx_scen']
-            screen_scen = background_scen['screen_scen']
-
-            for tx_vx_scen in tx_vx_scens:
-                df = bigdf[
-                    (bigdf.vx_scen == vx_scen) & (bigdf.screen_scen == screen_scen) & (bigdf.progression == progression) & (
-                                bigdf.tx_vx_scen == tx_vx_scen) & (bigdf.indication == indication)].groupby('year')[
-                    [f'{res}', f'{res}_low', f'{res}_high']].sum()
-                years = np.array(df.index)[timepoints]
-                best  = np.array(df[res])[timepoints]
-                low   = np.array(df[f'{res}_low'])[timepoints]
-                high  = np.array(df[f'{res}_high'])[timepoints]
-
-                ax.plot(years, best, color=colors[ci+3], label=tx_vx_scen_labels[tx_vx_scen])
-                ax.fill_between(years, low, high, color=colors[ci+3], alpha=0.3)
-                ci += 1
-
-            ax.legend(loc='best', title='Therapeutic vaccine')
-            fig.tight_layout()
-            fig_name = f'{figfolder}/residual_{res}_{background_scen_tags[background_scen_label]}_{progression}_prog_{indication}.png'
-            sc.savefig(fig_name, dpi=100)
-
-    return
 
 def plot_sweeps(fulldf=None, location='india', ltfu=None, scale=1e6): # TODO: set this up to plot cancers averted and/or NNT
     '''

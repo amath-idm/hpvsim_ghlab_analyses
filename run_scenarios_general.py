@@ -21,8 +21,8 @@ import pars_scenarios as sp
 
 # Comment out to not run
 to_run = [
-    'run_scenarios',
-    # 'plot_scenarios',
+    # 'run_scenarios',
+    'plot_scenarios',
 ]
 
 # Comment out locations to not run
@@ -203,30 +203,25 @@ if __name__ == '__main__':
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
         ut.plot_residual_burden(
-            locations=['india', 'nigeria', 'tanzania'],
+            locations=['india'],#, 'nigeria', 'tanzania'],
             background_scens={
-                'Screen & Treat, VIA': {
-                    'vx_scen': '90vx_9to14',
-                    'screen_scen': '70sc_90tx',
+                'VIA': {
                     'screen_prod': 'via'
                 },
-                 'POC-HPV+VIA+TA': {
-                    'vx_scen': '90vx_9to14',
-                    'screen_scen': '70sc_90tx',
-                    'ltfu': 0.05,
-                    'dx_prod': 'via'
+                 'AVE, 90%/83%': {
+                     'screen_prod': 'ave',
+                     'sens': .9,
+                     'spec': .83
                 },
-                'HPV+AVE+TA': {
-                    'vx_scen': '90vx_9to14',
-                    'screen_scen': '70sc_90tx',
-                    'ltfu': 0.3,
-                    'dx_prod': 'ave'
+                'AVE, 82%/86%': {
+                    'screen_prod': 'ave',
+                     'sens': .82,
+                     'spec': .86
                 },
-                'POC-HPV+AVE+TA': {
-                    'vx_scen': '90vx_9to14',
-                    'screen_scen': '70sc_90tx',
-                    'ltfu': 0.05,
-                    'dx_prod': 'ave'
+                'AVE, 62%/86%': {
+                    'screen_prod': 'ave',
+                     'sens': .62,
+                     'spec': .86
                 },
             }
         )
