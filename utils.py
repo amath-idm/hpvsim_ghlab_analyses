@@ -208,20 +208,15 @@ def plot_calib_pars(locations=None, to_plot=None, do_save=True):
     return
 
 
-def plot_residual_burden(locations=None, background_scens=None, triage=False):
+def plot_residual_burden(locations=None, background_scens=None, filestem='screening'):
     '''
     Plot the residual burden of HPV
     '''
     
     set_font(size=24)
 
-    location_legend = [i.capitalize() for i in locations]
-    if triage:
-        results_filestem='triage_results'
-        fig_filestem='triage'
-    else:
-        results_filestem = 'general_screening_results'
-        fig_filestem = 'general_screening'
+    results_filestem=f'{filestem}_results'
+    fig_filestem=filestem
 
     try:
         bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
@@ -238,19 +233,14 @@ def plot_residual_burden(locations=None, background_scens=None, triage=False):
     for ir, (res, reslabel) in enumerate({'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
         ax = axes[ir]
         for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-            screen_prod = background_scen['screen_prod']
-            if triage:
-                assert len(screen_prod) > 1
-                screen_prod = screen_prod[1]
-                col_name = 'triage_screen'
-            else:
-                col_name = 'primary_screen'
-            if screen_prod == 'via':
-                df = bigdf[(bigdf[col_name] == screen_prod)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+            primary_screen = background_scen['primary_screen']
+            triage_screen = background_scen['triage_screen']
+            if primary_screen == 'via' or triage_screen == 'via':
+                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
             else:
                 sens = background_scen['sens']
                 spec = background_scen['spec']
-                df = bigdf[(bigdf[col_name] == screen_prod) & (bigdf.sens == sens)
+                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
                            & (bigdf.spec == spec)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
 
             years = np.array(df.index)[50:106]
@@ -269,83 +259,70 @@ def plot_residual_burden(locations=None, background_scens=None, triage=False):
     fig_name = f'{figfolder}/{fig_filestem}_health_impact.png'
     sc.savefig(fig_name, dpi=100)
 
-    cancers_averted = dict()
-    cancer_deaths_averted = dict()
+    return
+
+
+def plot_ICER(locations=None, background_scens=None, filestem='screening'):
+    '''
+    Plot the residual burden of HPV
+    '''
+
+    set_font(size=24)
+    results_filestem=f'{filestem}_results'
+    fig_filestem=filestem
+
+    try:
+        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
+    except:
+        print('bigdf not available, trying to load for each location and generate it')
+        alldfs = sc.autolist()
+        for location in locations:
+            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
+            alldfs += alldf
+        bigdf = pd.concat(alldfs)
+
+    cancers = dict()
+    cancer_deaths = dict()
     cin_treatments = dict()
-    cancers_averted_low = dict()
-    cancer_deaths_averted_low = dict()
-    cin_treatments_low = dict()
-    cancers_averted_high = dict()
-    cancer_deaths_averted_high = dict()
-    cin_treatments_high = dict()
 
-    if triage:
-        col_name = 'triage_screen'
-    else:
-        col_name = 'primary_screen'
-
-    df = bigdf[(bigdf[col_name] == 'via')].groupby('year')[
-        ['total_cancers', f'total_cancers_low', f'total_cancers_high',
-         'total_cancer_deaths', f'total_cancer_deaths_low', f'total_cancer_deaths_high',
-         'n_cin_treated', f'n_cin_treated_low', f'n_cin_treated_high',
-         ]].sum()
-    base_cancers = np.array(df['total_cancers'])[50:106].sum()
-    base_cancers_low = np.array(df['total_cancers_low'])[50:106].sum()
-    base_cancers_high = np.array(df['total_cancers_high'])[50:106].sum()
-
-    base_cancer_deaths = np.array(df['total_cancer_deaths'])[50:106].sum()
-    base_cancer_deaths_low = np.array(df['total_cancer_deaths_low'])[50:106].sum()
-    base_cancer_deaths_high = np.array(df['total_cancer_deaths_high'])[50:106].sum()
-
-    base_cin_treated = np.array(df['n_cin_treated'])[50:106].sum()
-    base_cin_treated_low = np.array(df['n_cin_treated_low'])[50:106].sum()
-    base_cin_treated_high = np.array(df['n_cin_treated_high'])[50:106].sum()
     for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-        screen_prod = background_scen['screen_prod']
-        if triage:
-            assert len(screen_prod) > 1
-            screen_prod = screen_prod[1]
-            col_name = 'triage_screen'
+        primary_screen = background_scen['primary_screen']
+        triage_screen = background_scen['triage_screen']
+        if primary_screen == 'via' or triage_screen == 'via':
+            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[
+                ['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
         else:
-            col_name = 'primary_screen'
-
-        if screen_prod != 'via':
             sens = background_scen['sens']
             spec = background_scen['spec']
-            df = bigdf[(bigdf[col_name] == screen_prod) & (bigdf.sens == sens)
-                       & (bigdf.spec == spec)].groupby('year')[['total_cancers', f'total_cancers_low', f'total_cancers_high',
-                 'total_cancer_deaths', f'total_cancer_deaths_low', f'total_cancer_deaths_high',
-                 'n_cin_treated', f'n_cin_treated_low', f'n_cin_treated_high',
-                 ]].sum()
-            cancers_averted[background_scen_label] = base_cancers - np.array(df['total_cancers'])[50:106].sum()
-            cancer_deaths_averted[background_scen_label] = base_cancer_deaths - np.array(df['total_cancer_deaths'])[50:106].sum()
-            cin_treatments[background_scen_label] = np.array(df['n_cin_treated'])[50:106].sum() - base_cin_treated
+            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
+                & (bigdf.spec == spec)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
 
-            cancers_averted_low[background_scen_label] = base_cancers_low - np.array(df['total_cancers_low'])[50:106].sum()
-            cancer_deaths_averted_low[background_scen_label] = base_cancer_deaths_low - np.array(df['total_cancer_deaths_low'])[50:106].sum()
-            cin_treatments_low[background_scen_label] = np.array(df['n_cin_treated_low'])[50:106].sum() - base_cin_treated_low
+        cancers[background_scen_label] = np.array(df['total_cancers'])[50:106].sum()
+        cancer_deaths[background_scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
+        cin_treatments[background_scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
 
-            cancers_averted_high[background_scen_label] = base_cancers_high - np.array(df['total_cancers_high'])[50:106].sum()
-            cancer_deaths_averted_high[background_scen_label] = base_cancer_deaths_high - np.array(df['total_cancer_deaths_high'])[50:106].sum()
-            cin_treatments_high[background_scen_label] = np.array(df['n_cin_treated_high'])[50:106].sum() - base_cin_treated_high
+    data_for_plot = pd.DataFrame()
+    data_for_plot['scen'] = np.array(list(cancers.keys()))
+    data_for_plot['cases'] = np.array(list(cancers.values()))
+    data_for_plot['deaths'] = np.array(list(cancer_deaths.values()))
+    data_for_plot['cin_txs'] = np.array(list(cin_treatments.values()))
 
-    nnt_cases = np.array(list(cin_treatments.values())) / np.array(list(cancers_averted.values()))
-    nnt_deaths = np.array(list(cin_treatments.values())) / np.array(list(cancer_deaths_averted.values()))
-    nnt_cases_low = np.array(list(cin_treatments_low.values())) / np.array(list(cancers_averted_low.values()))
-    nnt_cases_high = np.array(list(cin_treatments_high.values())) / np.array(list(cancers_averted_high.values()))
-    nnt_deaths_low = np.array(list(cin_treatments_low.values())) / np.array(list(cancer_deaths_averted_low.values()))
-    nnt_deaths_high = np.array(list(cin_treatments_high.values())) / np.array(list(cancer_deaths_averted_high.values()))
+    colors = sc.gridcolors(len(data_for_plot))
+    fig, axes = pl.subplots(1, 2, figsize=(16, 8), sharey=True)
+    grouped = data_for_plot.groupby('scen')
+    for i, (key, group) in enumerate(grouped):
+        group.plot(ax=axes[0], kind='scatter', x='cases', y='cin_txs', label=key, color=colors[i], s=100)
+        group.plot(ax=axes[1], kind='scatter', x='deaths', y='cin_txs', label=key, color=colors[i], s=100)
 
-    fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
-    scen_labels = cancers_averted.keys()
-    axes[0].bar(scen_labels, nnt_cases, yerr = np.absolute(nnt_cases_low - nnt_cases_high))
-    axes[0].set_title('Ablations per case averted (relative to VIA)')
-    axes[1].bar(scen_labels, nnt_deaths, yerr = np.absolute(nnt_deaths_low - nnt_deaths_high))
-    axes[1].set_title('Ablations per death averted (relative to VIA)')
+    axes[0].set_xlabel('Cancer cases')
+    axes[1].set_xlabel('Cancer deaths')
+    axes[0].set_ylabel('CIN treatments')
+    axes[0].get_legend().remove()
+    axes[1].legend(loc='upper center', bbox_to_anchor=(1.65, 0.95), fancybox=True, title='Screening method')
     sc.SIticks(axes[0])
     sc.SIticks(axes[1])
     fig.tight_layout()
-    fig_name = f'{figfolder}/{fig_filestem}_NNT.png'
+    fig_name = f'{figfolder}/{fig_filestem}_ICER.png'
     sc.savefig(fig_name, dpi=100)
     return
 

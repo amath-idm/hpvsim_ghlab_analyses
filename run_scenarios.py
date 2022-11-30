@@ -21,8 +21,8 @@ import pars_scenarios as sp
 
 # Comment out to not run
 to_run = [
-    'run_scenarios',
-    # 'plot_scenarios',
+    # 'run_scenarios',
+    'plot_scenarios',
 ]
 
 # Comment out locations to not run
@@ -214,21 +214,122 @@ if __name__ == '__main__':
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
         ut.plot_residual_burden(
-            triage=True,
+            filestem='screening',
             locations=['india', 'nigeria', 'tanzania'],
             background_scens={
+                'VIA': {
+                    'primary_screen': 'via',
+                    'triage_screen': 'no_triage'
+                },
+                'AVE, 90%/83%': {
+                     'primary_screen': 'ave',
+                     'triage_screen': 'no_triage',
+                     'sens': .9,
+                     'spec': .83
+                },
+                'AVE, 82%/86%': {
+                     'primary_screen': 'ave',
+                     'triage_screen': 'no_triage',
+                     'sens': .82,
+                     'spec': .86
+                },
+                'AVE, 62%/86%': {
+                     'primary_screen': 'ave',
+                     'triage_screen': 'no_triage',
+                     'sens': .62,
+                     'spec': .86
+                },
                 'HPV+VIA': {
-                    'screen_prod': ['hpv','via']
+                    'primary_screen': 'hpv',
+                    'triage_screen': 'via'
                 },
                  'HPV+AVE, 95%/55%': {
-                     'screen_prod': ['hpv', 'ave'],
+                     'primary_screen': 'hpv',
+                     'triage_screen': 'ave',
                      'sens': .95,
                      'spec': .55
                 },
                 'HPV+AVE, 90%/70%': {
-                    'screen_prod': ['hpv', 'ave'],
+                     'primary_screen': 'hpv',
+                     'triage_screen': 'ave',
                      'sens': .9,
                      'spec': .7
+                },
+                'POC HPV+VIA': {
+                    'primary_screen': 'poc_hpv',
+                    'triage_screen': 'via'
+                },
+                'POC HPV+AVE, 95%/55%': {
+                    'primary_screen': 'poc_hpv',
+                    'triage_screen': 'ave',
+                    'sens': .95,
+                    'spec': .55
+                },
+                'POC HPV+AVE, 90%/70%': {
+                    'primary_screen': 'poc_hpv',
+                    'triage_screen': 'ave',
+                    'sens': .9,
+                    'spec': .7
+                },
+            }
+        )
+        ut.plot_ICER(
+            filestem='screening',
+            locations=['india', 'nigeria', 'tanzania'],
+            background_scens={
+                'VIA': {
+                    'primary_screen': 'via',
+                    'triage_screen': 'no_triage'
+                },
+                'AVE, 90%/83%': {
+                    'primary_screen': 'ave',
+                    'triage_screen': 'no_triage',
+                    'sens': .9,
+                    'spec': .83
+                },
+                'AVE, 82%/86%': {
+                    'primary_screen': 'ave',
+                    'triage_screen': 'no_triage',
+                    'sens': .82,
+                    'spec': .86
+                },
+                'AVE, 62%/86%': {
+                    'primary_screen': 'ave',
+                    'triage_screen': 'no_triage',
+                    'sens': .62,
+                    'spec': .86
+                },
+                'HPV+VIA': {
+                    'primary_screen': 'hpv',
+                    'triage_screen': 'via'
+                },
+                'HPV+AVE, 95%/55%': {
+                    'primary_screen': 'hpv',
+                    'triage_screen': 'ave',
+                    'sens': .95,
+                    'spec': .55
+                },
+                'HPV+AVE, 90%/70%': {
+                    'primary_screen': 'hpv',
+                    'triage_screen': 'ave',
+                    'sens': .9,
+                    'spec': .7
+                },
+                'POC HPV+VIA': {
+                    'primary_screen': 'poc_hpv',
+                    'triage_screen': 'via'
+                },
+                'POC HPV+AVE, 95%/55%': {
+                    'primary_screen': 'poc_hpv',
+                    'triage_screen': 'ave',
+                    'sens': .95,
+                    'spec': .55
+                },
+                'POC HPV+AVE, 90%/70%': {
+                    'primary_screen': 'poc_hpv',
+                    'triage_screen': 'ave',
+                    'sens': .9,
+                    'spec': .7
                 },
             }
         )
