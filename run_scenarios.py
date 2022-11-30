@@ -160,8 +160,8 @@ def run_scens(location=None, vaccination_coverage=None, # Input data
             df['spec'] = np.nan
         else:
             df['primary_screen'] = 'ave'
-            df['sens'] = screen_prods[i_dx][1][1]['sens']
-            df['spec'] = screen_prods[i_dx][1][1]['spec']
+            df['sens'] = screen_prods[i_dx][0][1]['sens']
+            df['spec'] = screen_prods[i_dx][0][1]['spec']
         if len(screen_prods[i_dx]) > 1:
             if isinstance(screen_prods[i_dx][1], str):
                 df['triage_screen'] = 'via'
