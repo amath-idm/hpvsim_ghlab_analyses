@@ -1,5 +1,5 @@
 '''
-Utilities for HPVsim therapeutic vaccine analyses, mostly related to plotting
+Utilities for HPVsim GHlabs collaboration analyses, mostly related to plotting
 '''
 
 import sciris as sc
@@ -49,206 +49,37 @@ def process_country_files(locations, top_results=100, do_save=True):
     return all_calib_pars
 
 
-def plot_trend(calib, best_thresh=2):
+def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem=None):
     '''
-    Plot the trend in best mismatch over time.
-    '''
-    mismatch = sc.dcp(calib.df['mismatch'].values)
-    best_mismatch = np.zeros(len(mismatch))
-    for i in range(len(mismatch)):
-        best_mismatch[i] = mismatch[:i+1].min()
-    smoothed_mismatch = sc.smooth(mismatch)
-    fig = pl.figure(figsize=(16,12), dpi=120)
-
-    ax1 = pl.subplot(2,1,1)
-    pl.plot(mismatch, alpha=0.2, label='Original')
-    pl.plot(smoothed_mismatch, lw=3, label='Smoothed')
-    pl.plot(best_mismatch, lw=3, label='Best')
-
-    ax2 = pl.subplot(2,1,2)
-    max_mismatch = mismatch.min()*best_thresh
-    inds = sc.findinds(mismatch<=max_mismatch)
-    pl.plot(best_mismatch, lw=3, label='Best')
-    pl.scatter(inds, mismatch[inds], c=mismatch[inds], label='Usable indices')
-    for ax in [ax1, ax2]:
-        pl.sca(ax)
-        pl.grid(True)
-        pl.legend()
-        sc.setylim()
-        sc.setxlim()
-        pl.xlabel('Trial number')
-        pl.ylabel('Mismatch')
-    return hppl.handle_show_return(fig=fig)
-
-
-def pairplotpars(data, inds=None, color_column=None, bounds=None, cmap='parula', bins=None, edgecolor='w',
-                 facecolor='#F8A493', figsize=(20, 16)):
-    '''
-    Plot scatterplots, histograms, and kernel densities for calibration results
-    '''
-
-    data = sc.odict(sc.dcp(data))
-
-    # Create the dataframe
-    df = pd.DataFrame.from_dict(data)
-    if inds is not None:
-        df = df.iloc[inds, :].copy()
-
-    # Choose the colors
-    if color_column:
-        colors = sc.vectocolor(df[color_column].values, cmap=cmap)
-    else:
-        colors = [facecolor for i in range(len(df))]
-    df['color_column'] = [sc.rgb2hex(rgba[:-1]) for rgba in colors]
-
-    # Make the plot
-    grid = sns.PairGrid(df)
-    grid = grid.map_lower(pl.scatter, **{'facecolors': df['color_column']})
-    grid = grid.map_diag(pl.hist, bins=bins, edgecolor=edgecolor, facecolor=facecolor)
-    grid = grid.map_upper(sns.kdeplot)
-    grid.fig.set_size_inches(figsize)
-    grid.fig.tight_layout()
-
-    # Set bounds
-    if bounds:
-        for ax in grid.axes.flatten():
-            xlabel = ax.get_xlabel()
-            ylabel = ax.get_ylabel()
-            if xlabel in bounds:
-                ax.set_xlim(bounds[xlabel])
-            if ylabel in bounds:
-                ax.set_ylim(bounds[ylabel])
-
-    return grid
-
-
-def plot_best(calib, best_thresh=2): # pragma: no cover
-    ''' Plot only the points with lowest mismatch. '''
-    max_mismatch = calib.df['mismatch'].min()*best_thresh
-    inds = sc.findinds(calib.df['mismatch'].values <= max_mismatch)
-    g = pairplotpars(calib.data, inds=inds, color_column='mismatch', bounds=calib.par_bounds)
-    return g
-
-
-def plot_calib_pars(locations=None, to_plot=None, do_save=True):
-    '''
-    Plot posterior distributions of calibration parameters for specified locations
-    Args:
-         locations (list): locations to plot
-         to_plot (list): parameters to plot
-         do_save (bool): whether to save the figure
-    '''
-
-    all_calib_pars = process_country_files(locations=locations, do_save=True)
-
-    if to_plot is None:
-        to_plot = [
-            'hpv16_dur_dysp_par1',
-            'hpv18_dur_dysp_par1',
-            'hrhpv_dur_dysp_par1',
-            'hpv16_dysp_rate',
-            'hpv18_dysp_rate',
-            'hrhpv_dysp_rate',
-            'hpv16_prog_rate',
-            'hpv18_prog_rate',
-            'hrhpv_prog_rate',
-            'hrhpv_rel_beta',
-        ]
-
-    # Figure settings
-    set_font(size=26)
-    colors = sc.gridcolors(10)
-
-    # Create figure
-    n_rows, n_cols = sc.get_rows_cols(len(to_plot), ratio=0.5)
-    fig, axes = pl.subplots(n_rows, n_cols, figsize=(24, 12))
-    for ax in axes.flat[len(to_plot):]:
-        ax.set_visible(False)
-    axes = axes.flatten()
-
-    for pn,par in enumerate(to_plot):
-        ax = axes[pn]
-        legendon = True if pn==1 else False
-        for li, location in enumerate(locations):
-            label = f'{location.capitalize()}'
-            location_label = f'{location.capitalize()}'
-            data_to_plot = all_calib_pars[all_calib_pars['location'] == location_label]
-            data_to_plot = data_to_plot[par].values
-            if ~np.isnan(data_to_plot).any():
-                count, bins_count = np.histogram(data_to_plot, bins=10)
-                pdf = count / sum(count)
-                if legendon:
-                    ax.plot(bins_count[1:], pdf, color=colors[li], label=label)
-                else:
-                    ax.plot(bins_count[1:], pdf, color=colors[li])
-
-        if pn==1:
-            ax.legend(frameon=False).set_title('Location')
-            # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-            #           fancybox=True, shadow=True, ncol=5)
-        if par != 'hpv_reactivation':
-            ax.set_title(par[:5], y=1.05)
-
-        if 'dur_dysp' in par:
-            ax.set_xlabel("Duration of dysplasia")
-        elif 'rel_beta' in par:
-            ax.set_xlabel("Transmissibility relative to HPV16")
-        elif 'prog_rate' in par:
-            ax.set_xlabel('Rate of dysplasia progression')
-        elif 'dysp_rate' in par:
-            ax.set_xlabel('Rate of HPV progression')
-        elif 'hpv_reactivation' in par:
-            ax.set_xlabel('Annual probability of HPV reactivation')
-        ax.set_ylabel("")
-    fig.suptitle('Comparison of calibration parameters across locations')
-    fig.tight_layout()
-    if do_save:
-        sc.savefig(f'{figfolder}/parplot.png', dpi=100)
-
-    return
-
-
-def plot_residual_burden(locations=None, background_scens=None, filestem='screening'):
-    '''
-    Plot the residual burden of HPV
+    Plot the residual burden of HPV under different scenarios
     '''
     
     set_font(size=24)
 
-    results_filestem=f'{filestem}_results'
-    fig_filestem=filestem
-
     try:
-        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
+        bigdf = sc.loadobj(f'{resfolder}/{filestem}.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_{filestem}.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
+
     colors = sc.gridcolors(10)
 
     fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
     for ir, (res, reslabel) in enumerate({'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
         ax = axes[ir]
-        for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-            primary_screen = background_scen['primary_screen']
-            triage_screen = background_scen['triage_screen']
-            if primary_screen == 'via' or triage_screen == 'via':
-                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
-            else:
-                sens = background_scen['sens']
-                spec = background_scen['spec']
-                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
-                           & (bigdf.spec == spec)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+        for cn, scen_label in enumerate(scens):
+            df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
 
             years = np.array(df.index)[50:106]
             best = np.array(df[res])[50:106]
             low = np.array(df[f'{res}_low'])[50:106]
             high = np.array(df[f'{res}_high'])[50:106]
 
-            ax.plot(years, best, color=colors[cn], label=background_scen_label)
+            ax.plot(years, best, color=colors[cn], label=scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
         if ir:
@@ -256,28 +87,26 @@ def plot_residual_burden(locations=None, background_scens=None, filestem='screen
         sc.SIticks(ax)
         ax.set_title(f'{reslabel}')
     fig.tight_layout()
-    fig_name = f'{figfolder}/{fig_filestem}_health_impact.png'
+    fig_name = f'{figfolder}/{fig_filestem}.png'
     sc.savefig(fig_name, dpi=100)
 
     return
 
 
-def plot_ICER(locations=None, background_scens=None, filestem='screening'):
+def plot_ICER(locations=None, scens=None, filestem=None, fig_filestem=None):
     '''
     Plot the residual burden of HPV
     '''
 
     set_font(size=24)
-    results_filestem=f'{filestem}_results'
-    fig_filestem=filestem
 
     try:
-        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
+        bigdf = sc.loadobj(f'{resfolder}/{filestem}.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_{filestem}.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
 
@@ -285,21 +114,11 @@ def plot_ICER(locations=None, background_scens=None, filestem='screening'):
     cancer_deaths = dict()
     cin_treatments = dict()
 
-    for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-        primary_screen = background_scen['primary_screen']
-        triage_screen = background_scen['triage_screen']
-        if primary_screen == 'via' or triage_screen == 'via':
-            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[
-                ['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
-        else:
-            sens = background_scen['sens']
-            spec = background_scen['spec']
-            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
-                & (bigdf.spec == spec)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
-
-        cancers[background_scen_label] = np.array(df['total_cancers'])[50:106].sum()
-        cancer_deaths[background_scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
-        cin_treatments[background_scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
+    for cn, scen_label in enumerate(scens):
+        df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
+        cancers[scen_label] = np.array(df['total_cancers'])[50:106].sum()
+        cancer_deaths[scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
+        cin_treatments[scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
 
     data_for_plot = pd.DataFrame()
     data_for_plot['scen'] = np.array(list(cancers.keys()))
@@ -322,14 +141,14 @@ def plot_ICER(locations=None, background_scens=None, filestem='screening'):
     sc.SIticks(axes[0])
     sc.SIticks(axes[1])
     fig.tight_layout()
-    fig_name = f'{figfolder}/{fig_filestem}_ICER.png'
+    fig_name = f'{figfolder}/{fig_filestem}.png'
     sc.savefig(fig_name, dpi=100)
     return
 
 
 def plot_sweeps(fulldf=None, location='india', ltfu=None, scale=1e6): # TODO: set this up to plot cancers averted and/or NNT
     '''
-    Plot parameter sweeps
+    Plot sweeps across different sensitivity and specificity values
     '''
 
     # Initialize figure
@@ -439,3 +258,33 @@ def plot_sweeps(fulldf=None, location='india', ltfu=None, scale=1e6): # TODO: se
 
     fig_name = f'{figfolder}/{location}_AVE_NNT_sweeps_{ltfu}ltfu.png'
     sc.savefig(fig_name, dpi=100)
+
+
+
+########################################################################
+#%% Other utils
+########################################################################
+def make_msims(sims, use_mean=True, save_msims=False):
+    '''
+    Utility to take a slice of sims and turn it into a multisim
+    '''
+
+    msim = hpv.MultiSim(sims)
+    msim.reduce(use_mean=use_mean)
+    i_sc, i_s = sims[0].meta.inds
+    for s, sim in enumerate(sims):  # Check that everything except seed matches
+        assert i_sc == sim.meta.inds[0]
+        assert (s == 0) or i_s != sim.meta.inds[1]
+    msim.meta = sc.objdict()
+    msim.meta.inds = [i_sc]
+    msim.meta.vals = sc.dcp(sims[0].meta.vals)
+    msim.meta.vals.pop('seed')
+
+    print(f'Processing multisim {msim.meta.vals.values()}...')
+    if save_msims:  # Warning, generates a lot of files!
+        id_str = '_'.join([str(i) for i in msim.meta.inds])
+        msimfile = f'{ut.resfolder}/final_msim{id_str}.msim'
+        msim.save(msimfile)
+
+    return msim
+

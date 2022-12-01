@@ -38,20 +38,15 @@ save_plots = True
 
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None,
-                   vx_scen=None, tx_vx_scen=None, screen_scen=None, indication=None,
-                   intro_year=None, debug=0, txvx_prods=None, screen_prod=None,
-                   multiscale=True, pop_analyzers=False, by_age_analyzers=False):
+                   debug=0, screen_intvs=None, multiscale=True, econ_analyzer=True):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
-
-    is_scen = (vx_scen is not None) or (tx_vx_scen is not None) or (screen_scen is not None)
-    end = 2060 if is_scen else 2020
 
     # Parameters
     pars = dict(
-        n_agents       = [50e3,5e3][debug],
+        n_agents       = [50e3,1e3][debug],
         dt             = [0.5,1.0][debug],
         start          = [1950,1980][debug],
-        end            = end,
+        end            = 2060,
         network        = 'default',
         location       = location,
         debut          = dp.debut[location],
@@ -67,91 +62,44 @@ def make_sim_parts(location=None, vaccination_coverage=None,
 
     # Analyzers
     analyzers = sc.autolist()
-
-    # Save population analyzers if requested
-    if pop_analyzers:
-        analyzers += [
-            hpv.age_pyramid(
-            timepoints=['1990','2020'],
-            datafile=f'data/{location}_age_pyramid_reduced.csv',
-            edges=np.linspace(0, 80, 9)),
-            hpv.snapshot(timepoints=['2020']),
-        ]
-
-    if by_age_analyzers:
-        edges = np.array([0., 15., 20., 25., 30., 40., 45., 50., 55., 65., 100.])
-        analyzers += [
-            hpv.age_results(
-                result_keys=sc.objdict(
-                    total_infections=sc.objdict(
-                        timepoints=['2019'],
-                        edges=edges,
-                    ),
-                    total_hpv_prevalence=sc.objdict(
-                        timepoints=['2019'],
-                        edges=edges,
-                    ),
-                    # total_hpv_incidence=sc.objdict(
-                    #     timepoints=['2019'],
-                    #     edges=edges,
-                    # )
-                )
-            )
-        ]
-
+    if econ_analyzer:
+        analyzers += an.econ_analyzer()
 
     # Interventions, all added as part of specific scenarios
-    interventions = []
+    interventions = sc.autolist()
 
-    if vx_scen is not None:
+    # Routine vaccination
+    routine_years   = vaccination_coverage[location]['routine']['years'][:81] ### ONLY USING 1980-2060, WHICH IS WHY THIS INDEX IS HERE
+    routine_values  = vaccination_coverage[location]['routine']['coverage'][:81]
 
-        # Routine vaccination
-        routine_years   = vaccination_coverage[location]['routine']['years'][:81] ### ONLY USING 1980-2060, WHICH IS WHY THIS INDEX IS HERE
-        routine_values  = vaccination_coverage[location]['routine']['coverage'][:81]
+    routine_vx = hpv.routine_vx(
+        prob=routine_values,
+        years=routine_years,
+        product='bivalent',
+        age_range=(9, 10),
+        label='Routine'
+    )
 
-        routine_vx = hpv.routine_vx(
-            prob=routine_values,
-            years=routine_years,
-            product='bivalent',
-            age_range=(9, 10),
-            label='Routine'
-        )
+    # These locations have campaign coverage in the datafile
+    if location in ['nigeria', 'india']:
+        campaign_value = vaccination_coverage[location]['campaign']['coverage'][0]
+        campaign_year  = vaccination_coverage[location]['campaign']['years'][0]
+    else:
+        campaign_value = vaccination_coverage['nigeria']['campaign']['coverage'][0] # Assume same as nigeria
+        campaign_year  = vaccination_coverage['nigeria']['campaign']['years'][0]
 
-        # These locations have campaign coverage in the datafile
-        if location in ['nigeria', 'india']:
-            campaign_value = vaccination_coverage[location]['campaign']['coverage'][0]
-            campaign_year  = vaccination_coverage[location]['campaign']['years'][0]
-        else:
-            campaign_value = vaccination_coverage['nigeria']['campaign']['coverage'][0] # Assume same as nigeria
-            campaign_year  = vaccination_coverage['nigeria']['campaign']['years'][0]
+    campaign_vx = hpv.campaign_vx(
+        prob=campaign_value,
+        years=campaign_year,
+        product='bivalent',
+        age_range=(9, 14),
+        label='Campaign'
+    )
 
-        if '9to14' in vx_scen:
-            campaign_vx = hpv.campaign_vx(
-                prob=campaign_value,
-                years=campaign_year,
-                product='bivalent',
-                age_range=(9, 14),
-                label='Campaign'
-            )
+    interventions += [routine_vx, campaign_vx]
 
-        else:
-            campaign_vx = hpv.campaign_vx(
-                prob=campaign_value,
-                years=campaign_year,
-                product='bivalent',
-                age_range=(9, 24),
-                label='Campaign'
-            )
-
-        interventions += [routine_vx, campaign_vx]
-
-    if tx_vx_scen is not None:
-        # Add in therapeutic vaccines
-        interventions += sp.get_txvx_intvs(use_case=tx_vx_scen, indication=indication,
-                                           txvx_prods=txvx_prods, intro_year=intro_year)
-
-    if screen_scen is not None:
-        interventions += sp.get_screen_intvs(location, screen_scen, screen_prod=screen_prod)
+    # Add screening interventions
+    interventions += screen_intvs
 
     return pars, analyzers, interventions
 
@@ -165,12 +113,10 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 
 #%% Simulation running functions
 
-def run_sim(location=None, use_calib_pars=False,
-            do_plot=False, save_plots=False, seed=0, vaccination_coverage=None,
-            vx_scen=None, tx_vx_scen=None, screen_scen=None,
-            indication=None, txvx_prods=None, screen_prod=None, intro_year=None,
-            multiscale=True, debug=0, label=None, meta=None, verbose=0.1, do_shrink=True,
-            do_save=True, pop_analyzers=False, by_age_analyzers=False, die=False):
+def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
+            debug=0, seed=0, vaccination_coverage=None,
+            label=None, meta=None, verbose=0.1,
+            do_save=True, die=False):
     ''' Assemble the parts into a complete sim and run it '''
 
     # Decide what message to print
@@ -183,9 +129,7 @@ def run_sim(location=None, use_calib_pars=False,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage,
-                          vx_scen=vx_scen, tx_vx_scen=tx_vx_scen, screen_scen=screen_scen, intro_year=intro_year,
-                          indication=indication, txvx_prods=txvx_prods, screen_prod=screen_prod,
-                          multiscale=multiscale, debug=debug, pop_analyzers=pop_analyzers, by_age_analyzers=by_age_analyzers)
+                          screen_intvs=screen_intvs, debug=debug)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 
     # Store metadata
@@ -196,7 +140,7 @@ def run_sim(location=None, use_calib_pars=False,
         sim.meta = sc.objdict()
     sim.meta.location = location # Store location in an easy-to-access place
     sim['rand_seed'] = seed # Set seed
-    sim.label = location # Set label
+    sim.label = f'{label}--{location}' # Set label
 
     # Make any parameter updates
     if use_calib_pars:
@@ -213,66 +157,9 @@ def run_sim(location=None, use_calib_pars=False,
     # Run
     sim['verbose'] = verbose
     sim.run()
-
-
-    # Check plot()
-    if do_plot:
-        to_plot = {
-            'Total Infections': [
-                'total_infections',
-            ],
-            'Total CINs': [
-                'total_cin1s',
-                'total_cin2s',
-                'total_cin3s'
-            ],
-            'Cervical cancer cases': [
-                'total_cancers',
-            ],
-            'Cervical cancer incidence': [
-                'asr_cancer',
-                'total_cancer_incidence'
-            ],
-        }
-        if screen_scen is not None:
-            to_plot['Screens'] = [
-                'new_screens',
-                'new_screened'
-            ]
-            to_plot['Tx'] = [
-                'new_cin_treatments',
-                'new_cin_treated'
-            ]
-        if tx_vx_scen is not None:
-            to_plot['TxVx'] = [
-                'new_txvx_doses',
-                'new_tx_vaccinated',
-            ]
-        sim.plot(do_save=save_plots, do_show=True, to_plot=to_plot, fig_path=f'{ut.figfolder}/{location}_basic_epi.png')
-
-        if by_age_analyzers:
-            az = sim.get_analyzer(hpv.age_results)
-            az.plot(do_save=save_plots, do_show=True, fig_path=f'{ut.figfolder}/{location}_by_age.png')
-    
-    if do_shrink: 
-        sim.shrink()
+    sim.shrink()
         
-        # Keep only the part of the population pyramid snapshot needed for plotting
-        people = None
-        try:
-            people = sim.get_analyzer('snapshot').snapshots[0]
-        except:
-            pass
-        try:
-            if people is not None:
-                for key in list(people.keys()):
-                    if key not in ['uid', 'contacts']:
-                        delattr(people, key) # Manually shrink the people object to the bare minimum
-        except Exception as E:
-            errormsg = f'Could not shrink analyzer, OK if analyzer does not exist: {str(E)}'
-            print(errormsg)
-        
-    if do_save: 
+    if do_save:
         sim.save(f'{ut.resfolder}/{location}.sim')
     
     return sim
@@ -281,7 +168,7 @@ def run_sim(location=None, use_calib_pars=False,
 def run_sims(locations=None, *args, **kwargs):
     ''' Run multiple simulations in parallel '''
     
-    kwargs = sc.mergedicts(dict(use_calib_pars=True, do_plot=False, debug=debug, save_econ=False, pop_analyzers=True, do_save=True), kwargs)
+    kwargs = sc.mergedicts(dict(use_calib_pars=True, debug=debug), kwargs)
     simlist = sc.parallelize(run_sim, iterkwargs=dict(location=locations), kwargs=kwargs, serial=debug, die=True)
     sims = sc.objdict({location:sim for location,sim in zip(locations, simlist)}) # Convert from a list to a dict
     
@@ -294,7 +181,7 @@ if __name__ == '__main__':
     T = sc.timer()
     
     # Run a single sim per location -- usually locally, can be used for sanity checking and debugging
-    sims = run_sims(locations, by_age_analyzers=True, do_plot=True)
+    sims = run_sims(locations)
     
     T.toc('Done')
 
