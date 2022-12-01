@@ -51,11 +51,13 @@ class econ_analyzer(hpv.Analyzer):
             simvals = sim.meta.vals
             primary_screen = simvals.primary
             triage_screen = simvals.triage
-            scen_label = simvals.scen_label
 
-            if primary_screen:
+            if primary_screen in ['hpv', 'poc_hpv', 'via', 'ave']:
+                pass
+                # self.df.loc[li].new_hpv_screens +=
 
-                self.df.loc[li].new_hpv_
+            if triage_screen in ['via', 'ave']:
+                pass
 
             # Resources
             self.df.loc[li].new_screens += count(ppl.date_screened[:] == lt)
