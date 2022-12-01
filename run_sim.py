@@ -116,7 +116,7 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
             debug=0, seed=0, vaccination_coverage=None,
             label=None, meta=None, verbose=0.1,
-            do_save=True, die=False):
+            do_save=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
 
     # Decide what message to print

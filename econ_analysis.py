@@ -21,14 +21,14 @@ to_run = [
 
 locations = [
     'india',
-    'nigeria',
-    'tanzania'
+    # 'nigeria',
+    # 'tanzania'
 ]
 
-india = pd.read_csv(f'results/india_econ.csv')
-nigeria = pd.read_csv(f'results/nigeria_econ.csv')
-tanzania = pd.read_csv(f'results/tanzania_econ.csv')
-model_res = pd.concat([india, nigeria, tanzania])
+dfs = sc.autolist()
+for location in locations:
+    dfs += pd.read_csv(f'results/{location}_econ.csv')
+model_res = pd.concat(dfs)
 
 n_seeds = len(np.unique(model_res['seed']))
 cost_params = pd.DataFrame()
@@ -69,6 +69,7 @@ cost_params['cancer_sd'] = (2*1.96)*(33+75+159+104+12+90.3+8.6+5+4.8+241)/450
 # 2. (2020 USD) World Health Organization. (2020). Costing the National Strategic Plan on Prevention and Control of Cervical Cancer: Tanzania, 2020 –2024November 2020.
 # 3. (2016 USD) Chauhan, A. S., Prinja, S., Srinivasan, R., Rai, B., Malliga, J. S., Jyani, G., Gupta, N., &#38; Ghoshal, S. (2020). Cost effectiveness of strategies for cervical cancer prevention in India. <i>PLoS ONE</i>, <i>15</i>(9 September). https://doi.org/10.1371/journal.pone.0238291</div>
 # 4 (2020 USD) Singh et a., Cost of Treatment for Cervical Cancer in India, Asian Pacific Journal of Cancer Prevention https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7779435/
+
 lower_clip = 0.
 upper_clip = np.inf
 
@@ -76,10 +77,18 @@ dfs = sc.autolist()
 for location in locations:
     simulated_costs = pd.DataFrame()
     costs = cost_params[cost_params['location'] == location]
-    simulated_costs['HPV'] = truncnorm.rvs((lower_clip - costs['HPV']) / costs['HPV_sd'], (upper_clip - costs['HPV']) / costs['HPV_sd'], loc=costs['HPV'], scale=costs['HPV_sd'], size=n_seeds)
-    simulated_costs['VIA'] = truncnorm.rvs((lower_clip - costs['VIA']) / costs['VIA_sd'], (upper_clip - costs['VIA']) / costs['VIA_sd'], loc=costs['VIA'], scale=costs['VIA_sd'], size=n_seeds)
-    simulated_costs['CIN'] = truncnorm.rvs((lower_clip - costs['CIN']) / costs['CIN_sd'], (upper_clip - costs['CIN']) / costs['CIN_sd'], loc=costs['CIN'], scale=costs['CIN_sd'], size=n_seeds)
-    simulated_costs['cancer'] = truncnorm.rvs((lower_clip - costs['cancer']) / costs['cancer_sd'], (upper_clip - costs['cancer']) / costs['cancer_sd'], loc=costs['cancer'], scale=costs['cancer_sd'], size=n_seeds)
+    simulated_costs['HPV'] = truncnorm.rvs((lower_clip - costs['HPV']) / costs['HPV_sd'],
+                                           (upper_clip - costs['HPV']) / costs['HPV_sd'],
+                                           loc=costs['HPV'], scale=costs['HPV_sd'], size=n_seeds)
+    simulated_costs['VIA'] = truncnorm.rvs((lower_clip - costs['VIA']) / costs['VIA_sd'],
+                                           (upper_clip - costs['VIA']) / costs['VIA_sd'],
+                                           loc=costs['VIA'], scale=costs['VIA_sd'], size=n_seeds)
+    simulated_costs['CIN'] = truncnorm.rvs((lower_clip - costs['CIN']) / costs['CIN_sd'],
+                                           (upper_clip - costs['CIN']) / costs['CIN_sd'],
+                                           loc=costs['CIN'], scale=costs['CIN_sd'], size=n_seeds)
+    simulated_costs['cancer'] = truncnorm.rvs((lower_clip - costs['cancer']) / costs['cancer_sd'],
+                                              (upper_clip - costs['cancer']) / costs['cancer_sd'],
+                                              loc=costs['cancer'], scale=costs['cancer_sd'], size=n_seeds)
     simulated_costs['location'] = location
     dfs += simulated_costs
 
@@ -92,14 +101,18 @@ for location in locations:
     costs = simulated_cost_df[simulated_cost_df['location'] == location]
     for scenario in scenarios:
         df = pd.DataFrame()
-        model_output = model_res[(model_res['location'] == location) &
-                                 (model_res['scen_label'] == scenario)]
-        means = model_output.groupby('year')[['new_cancers', 'new_cancer_deaths', 'new_screens',
-                                             'new_cin_treatments', 'new_cancer_treatments']].mean()
+        model_output = model_res[(model_res['location'] == location) & (model_res['scen_label'] == scenario)]
+        means = model_output.groupby('year')[['new_cancers', 'new_cancer_deaths', 'new_hpv_screens',
+                                              'new_poc_hpv_screens', 'new_via_screens', 'new_ave_screens',
+                                              'new_thermal_ablations', 'new_leeps', 'new_cancer_treatments']].mean()
         df['total_cancers'] = np.array(means['new_cancers']).sum()
         df['total_cancer_deaths'] = np.array(means['new_cancer_deaths']).sum()
-        df['total_screens'] = np.array(means['new_screens']).sum()
-        df['total_cin_treatments'] = np.array(means['new_cin_treatments']).sum()
+        df['total_hpv_screens'] = np.array(means['new_hpv_screens']).sum()
+        df['total_poc_hpv_screens'] = np.array(means['new_poc_hpv_screens']).sum()
+        df['total_via_screens'] = np.array(means['new_via_screens']).sum()
+        df['total_ave_screens'] = np.array(means['new_ave_screens']).sum()
+        df['total_thermal_ablations'] = np.array(means['new_thermal_ablations']).sum()
+        df['total_leeps'] = np.array(means['new_leeps']).sum()
         df['total_cancer_treatments'] = np.array(means['new_cancer_treatments']).sum()
         df['location'] = location
         df['scen_label'] = scenario

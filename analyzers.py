@@ -60,14 +60,14 @@ class econ_analyzer(hpv.Analyzer):
                 }
                 # Resources
                 if primary_screen in ['hpv', 'poc_hpv', 'via', 'ave']:
-                    self.df.loc[li][resource_dict[primary_screen]] += sim.get_intervention('screening').n_products_used.values[li]
+                    self.df.loc[li][resource_dict[primary_screen]] += sim.get_intervention('screening').n_products_used.values[lt]
 
                 if triage_screen in ['via', 'ave']:
-                    self.df.loc[li][resource_dict[triage_screen]] += sim.get_intervention('triage').n_products_used.values[li]
+                    self.df.loc[li][resource_dict[triage_screen]] += sim.get_intervention('triage').n_products_used.values[lt]
 
-                self.df.loc[li].new_thermal_ablations += sim.get_intervention('ablation').n_products_used.values[li]
-                self.df.loc[li].new_leeps += sim.get_intervention('excision').n_products_used.values[li]
-                self.df.loc[li].new_cancer_treatments += sim.get_intervention('radiation').n_products_used.values[li]
+                self.df.loc[li].new_thermal_ablations += sim.get_intervention('ablation').n_products_used.values[lt]
+                self.df.loc[li].new_leeps += sim.get_intervention('excision').n_products_used.values[lt]
+                self.df.loc[li].new_cancer_treatments += sim.get_intervention('radiation').n_products_used.values[lt]
 
             # Age outputs
             self.df.loc[li].av_age_other_deaths = av_age(ppl.date_dead_other == lt)
