@@ -60,7 +60,6 @@ class econ_analyzer(hpv.Analyzer):
 
     def finalize(self, sim):
         # Add in results that are already generated (NB, these have all been scaled already)
-        self.df['new_txvx_doses'] = sim.results['new_txvx_doses'][self.si:]
         self.df['new_cancers'] = sim.results['total_cancers'][self.si:]
         self.df['new_cancer_deaths'] = sim.results['total_cancer_deaths'][self.si:]
         self.df['new_other_deaths'] = sim.results['other_deaths'][self.si:]

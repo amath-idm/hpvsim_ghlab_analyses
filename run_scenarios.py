@@ -21,8 +21,8 @@ import pars_scenarios as sp
 
 # Comment out to not run
 to_run = [
-    # 'run_scenarios',
-    'plot_scenarios',
+    'run_scenarios',
+    # 'plot_scenarios',
 ]
 
 # Comment out locations to not run
@@ -89,10 +89,28 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=
 
     # Rearrange sims
     sims = np.empty((len(screen_scens), n_seeds), dtype=object)
+    econdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array
         i_dx, i_s = sim.meta.inds
         sims[i_dx, i_s] = sim
+        econdf = sim.get_analyzer().df
+        econdf['location'] = location
+        econdf['seed'] = i_s
+        econdfs += econdf
+        sim['analyzers'] = []  # Remove the analyzer so we don't need to reduce it
+
+        for var in ['primary','triage','sens','spec','ltfu']:
+            if sim.meta.vals.get(var):
+                econdf[var] = sim.meta.vals.get(var)
+            else:
+                econdf[var] = np.nan
+
+        # Store label - this will be used for plotting
+        econdf['scen_label'] = sim.meta.vals.scen_label
+
+    allecondf = pd.concat(econdfs)
+    allecondf.to_csv(f'{ut.resfolder}/{location}_econ.csv')
 
     # Prepare to convert sims to msims
     all_sims_for_multi = []
@@ -188,7 +206,6 @@ if __name__ == '__main__':
 
         bigdf = pd.concat(alldfs)
         sc.saveobj(f'{ut.resfolder}/{filestem}.obj', bigdf)
-
 
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
