@@ -28,7 +28,8 @@ class econ_analyzer(hpv.Analyzer):
 
     def initialize(self, sim):
         super().initialize(sim)
-        columns = ['new_screens', 'new_cin_treatments', 'new_cancer_treatments',
+        columns = ['new_hpv_screens', 'new_poc_hpv_screens', 'new_ave_screens', 'new_via_screens',
+                   'new_thermal_ablations', 'new_leeps', 'new_cancer_treatments',
                    'new_cancers', 'new_cancer_deaths', 'new_other_deaths',
                    'av_age_cancers', 'av_age_cancer_deaths', 'av_age_other_deaths']
         self.si = sc.findinds(sim.res_yearvec,self.start)[0]
@@ -46,7 +47,17 @@ class econ_analyzer(hpv.Analyzer):
             li = np.floor(sim.yearvec[sim.t])
             lt = sim.t-1
 
-            # Age outputs
+            # Pull out characteristics of sim to decide what resources we need
+            simvals = sim.meta.vals
+            primary_screen = simvals.primary
+            triage_screen = simvals.triage
+            scen_label = simvals.scen_label
+
+            if primary_screen:
+
+                self.df.loc[li].new_hpv_
+
+            # Resources
             self.df.loc[li].new_screens += count(ppl.date_screened[:] == lt)
             self.df.loc[li].new_cin_treatments += count(ppl.date_cin_treated[:] == lt)
             self.df.loc[li].new_cancer_treatments += count(ppl.date_cancer_treated[:] == lt)

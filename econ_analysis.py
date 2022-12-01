@@ -19,11 +19,18 @@ to_run = [
     'plot_scenarios',
 ]
 
-# india = pd.read_csv(f'results/india_econ.csv')
-# nigeria = pd.read_csv(f'results/nigeria_econ.csv')
-# tanzania = pd.read_csv(f'results/tanzania_econ.csv')
+locations = [
+    'india',
+    'nigeria',
+    'tanzania'
+]
 
-n_seeds = 5
+india = pd.read_csv(f'results/india_econ.csv')
+nigeria = pd.read_csv(f'results/nigeria_econ.csv')
+tanzania = pd.read_csv(f'results/tanzania_econ.csv')
+model_res = pd.concat([india, nigeria, tanzania])
+
+n_seeds = len(np.unique(model_res['seed']))
 cost_params = pd.DataFrame()
 cost_params['location'] = np.array(['india', 'nigeria', 'tanzania'])
 cost_params['HPV'] = np.array([14.8, 36, 9.1])
@@ -66,7 +73,7 @@ lower_clip = 0.
 upper_clip = np.inf
 
 dfs = sc.autolist()
-for location in ['india', 'nigeria', 'tanzania']:
+for location in locations:
     simulated_costs = pd.DataFrame()
     costs = cost_params[cost_params['location'] == location]
     simulated_costs['HPV'] = truncnorm.rvs((lower_clip - costs['HPV']) / costs['HPV_sd'], (upper_clip - costs['HPV']) / costs['HPV_sd'], loc=costs['HPV'], scale=costs['HPV_sd'], size=n_seeds)
@@ -76,8 +83,29 @@ for location in ['india', 'nigeria', 'tanzania']:
     simulated_costs['location'] = location
     dfs += simulated_costs
 
-alldf = pd.concat(dfs)
+simulated_cost_df = pd.concat(dfs)
 
+scenarios = np.unique(model_res['scen_label'])
+
+dfs = sc.autolist()
+for location in locations:
+    costs = simulated_cost_df[simulated_cost_df['location'] == location]
+    for scenario in scenarios:
+        df = pd.DataFrame()
+        model_output = model_res[(model_res['location'] == location) &
+                                 (model_res['scen_label'] == scenario)]
+        means = model_output.groupby('year')[['new_cancers', 'new_cancer_deaths', 'new_screens',
+                                             'new_cin_treatments', 'new_cancer_treatments']].mean()
+        df['total_cancers'] = np.array(means['new_cancers']).sum()
+        df['total_cancer_deaths'] = np.array(means['new_cancer_deaths']).sum()
+        df['total_screens'] = np.array(means['new_screens']).sum()
+        df['total_cin_treatments'] = np.array(means['new_cin_treatments']).sum()
+        df['total_cancer_treatments'] = np.array(means['new_cancer_treatments']).sum()
+        df['location'] = location
+        df['scen_label'] = scenario
+        dfs += df
+
+alldfs = pd.concat(dfs)
 print('done')
 
 

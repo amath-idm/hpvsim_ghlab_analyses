@@ -45,7 +45,7 @@ ave_triage_ss = [
     [0.90,0.70],
 ]
 
-debug = 0
+debug = 1
 n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
 
 
