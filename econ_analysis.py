@@ -105,15 +105,15 @@ for location in locations:
         means = model_output.groupby('year')[['new_cancers', 'new_cancer_deaths', 'new_hpv_screens',
                                               'new_poc_hpv_screens', 'new_via_screens', 'new_ave_screens',
                                               'new_thermal_ablations', 'new_leeps', 'new_cancer_treatments']].mean()
-        df['total_cancers'] = np.array(means['new_cancers']).sum()
-        df['total_cancer_deaths'] = np.array(means['new_cancer_deaths']).sum()
-        df['total_hpv_screens'] = np.array(means['new_hpv_screens']).sum()
-        df['total_poc_hpv_screens'] = np.array(means['new_poc_hpv_screens']).sum()
-        df['total_via_screens'] = np.array(means['new_via_screens']).sum()
-        df['total_ave_screens'] = np.array(means['new_ave_screens']).sum()
-        df['total_thermal_ablations'] = np.array(means['new_thermal_ablations']).sum()
-        df['total_leeps'] = np.array(means['new_leeps']).sum()
-        df['total_cancer_treatments'] = np.array(means['new_cancer_treatments']).sum()
+        df['total_cancers'] = [means['new_cancers'].sum()]
+        df['total_cancer_deaths'] = [means['new_cancer_deaths'].sum()]
+        df['total_hpv_screens'] = [means['new_hpv_screens'].sum()]
+        df['total_poc_hpv_screens'] = [means['new_poc_hpv_screens'].sum()]
+        df['total_via_screens'] = [means['new_via_screens'].sum()]
+        df['total_ave_screens'] = [means['new_ave_screens'].sum()]
+        df['total_thermal_ablations'] = [means['new_thermal_ablations'].sum()]
+        df['total_leeps'] = [means['new_leeps'].sum()]
+        df['total_cancer_treatments'] = [means['new_cancer_treatments'].sum()]
         df['location'] = location
         df['scen_label'] = scenario
         dfs += df
