@@ -38,8 +38,7 @@ save_plots = True
 
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None,
-                   intro_year=None, debug=0, screen_intvs=None,
-                   multiscale=True, econ_analyzer=False):
+                   debug=0, screen_intvs=None, multiscale=True, econ_analyzer=True):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
 
     # Parameters
@@ -63,7 +62,8 @@ def make_sim_parts(location=None, vaccination_coverage=None,
 
     # Analyzers
     analyzers = sc.autolist()
-    analyzers += an.econ_analyzer()
+    if econ_analyzer:
+        analyzers += an.econ_analyzer()
 
     # Interventions, all added as part of specific scenarios
     interventions = sc.autolist()
