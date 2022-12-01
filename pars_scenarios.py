@@ -9,53 +9,26 @@ import hpvsim as hpv
 import pars_data as dp
 
 
-def get_screen_intvs(location, screen_scen=None, screen_prod=None,
+def get_screen_intvs(location, primary=None, triage=None, ltfu=None, sens=None, spec=None,
                      start_year=2020, end_year=2040):
     ''' Make interventions for screening scenarios '''
 
-    # Create inputs
-    if len(screen_prod)>1:
-        primary_screen = 'hpv' # Primary screening product
-        if 'poc' in screen_prod[0]:
-            ltfu = 0.05
-        else:
-            ltfu = 0.3
-        if isinstance(screen_prod[1], str):
-            triage_screen = screen_prod[1]
-        else:
-            triage_screen = screen_prod[1][0]
-    else:
-        if isinstance(screen_prod[0], str):
-            primary_screen = screen_prod[0]
-        else:
-            primary_screen = screen_prod[0][0]
-        triage_screen = None
-        ltfu = 0.05
+    # Return empty list if nothing is defined
+    if primary is None: return []
 
+    # Create AVE products
+    if primary=='ave' or triage=='ave':
+        if sens is None or spec is None:
+            raise ValueError('Must provide sensitivity and specificity if using AVE test.')
+        else:
+            ave, eff_vals = make_AVE(sens, spec)
+        if primary == 'ave': primary = ave
+        else: triage=ave
+
+    # Define gradual scale-up of screening
     screen_ramp = np.arange(start_year, end_year, dtype=int) # Ramp-up years
-
-
-    # Only difference between the two screening scenarios is coverage over 2020-2040
-    if screen_scen == '0sc_10tx':
-        screen_prob_final = 0.0
-        treat_prob = 0.1
-    elif screen_scen == '10sc_10tx':
-        screen_prob_final = 0.1
-        treat_prob = 0.1
-    elif screen_scen == '30sc_30tx':
-        screen_prob_final = 0.3
-        treat_prob = 0.3
-    elif screen_scen == '50sc_50tx':
-        screen_prob_final = 0.5
-        treat_prob = 0.5
-    elif screen_scen == '70sc_90tx':
-        screen_prob_final = 0.7
-        treat_prob = 0.9
-    else:
-        errormsg = f'Screening scenario {screen_scen} not recognized'
-        raise NotImplementedError(errormsg)
-
-    # Gradual scale-up of screening
+    screen_prob_final = 0.7
+    treat_prob = 0.9
     screen_coverage = list(np.linspace(start=dp.screening_coverage[location], stop=screen_prob_final, num=len(screen_ramp)))
     screen_coverage += [screen_prob_final] * (end_year - start_year + 1)
 
@@ -63,7 +36,7 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
     screen_eligible = lambda sim: np.isnan(sim.people.date_screened) | \
                                   (sim.t > (sim.people.date_screened + 10 / sim['dt']))
     screening = hpv.routine_screening(
-        product=primary_screen,
+        product=primary,
         prob=screen_coverage,
         eligibility=screen_eligible,
         age_range=[30, 50],
@@ -71,14 +44,14 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
         label='screening'
     )
 
-    if triage_screen is not None:
+    if triage is not None:
         # Triage screening
         screen_positive = lambda sim: sim.get_intervention('screening').outcomes['positive']
         triage_screening = hpv.routine_triage(
             start_year=start_year,
             prob=1 - ltfu,
             annual_prob=False,
-            product=triage_screen,
+            product=triage,
             eligibility=screen_positive,
             label='triage'
         )
@@ -131,7 +104,7 @@ def get_screen_intvs(location, screen_scen=None, screen_prod=None,
         label='radiation'
     )
 
-    if triage_screen is not None:
+    if triage is not None:
         st_intvs = [screening, triage_screening, assign_treatment, ablation, excision, radiation]
     else:
         st_intvs = [screening, triage_screening, ablation, excision, radiation]

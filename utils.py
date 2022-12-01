@@ -280,3 +280,35 @@ def plot_sweeps(fulldf=None, location='india', ltfu=None, scale=1e6): # TODO: se
 
     fig_name = f'{figfolder}/{location}_AVE_NNT_sweeps_{ltfu}ltfu.png'
     sc.savefig(fig_name, dpi=100)
+
+
+
+########################################################################
+#%% Other utils
+########################################################################
+def make_msims(sims, use_mean=True, save_msims=False):
+    '''
+    Utility to take a slice of sims and turn it into a multisim
+    '''
+
+    msim = hpv.MultiSim(sims)
+    msim.reduce(use_mean=use_mean)
+    i_vx, i_sc, i_dx, i_s = sims[0].meta.inds
+    for s, sim in enumerate(sims):  # Check that everything except seed matches
+        assert i_vx == sim.meta.inds[0]
+        assert i_sc == sim.meta.inds[1]
+        assert i_dx == sim.meta.inds[2]
+        assert (s == 0) or i_s != sim.meta.inds[3]
+    msim.meta = sc.objdict()
+    msim.meta.inds = [i_vx, i_sc, i_dx]
+    msim.meta.vals = sc.dcp(sims[0].meta.vals)
+    msim.meta.vals.pop('seed')
+
+    print(f'Processing multisim {msim.meta.vals.values()}...')
+    if save_msims:  # Warning, generates a lot of files!
+        id_str = '_'.join([str(i) for i in msim.meta.inds])
+        msimfile = f'{ut.resfolder}/final_msim{id_str}.msim'
+        msim.save(msimfile)
+
+    return msim
+

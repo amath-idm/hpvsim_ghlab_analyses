@@ -38,33 +38,6 @@ n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
 
 #%% Functions
 
-def make_msims(sims, use_mean=True, save_msims=False):
-    '''
-    Utility to take a slice of sims and turn it into a multisim
-    '''
-
-    msim = hpv.MultiSim(sims)
-    msim.reduce(use_mean=use_mean)
-    i_vx, i_sc, i_dx, i_s = sims[0].meta.inds
-    for s,sim in enumerate(sims): # Check that everything except seed matches
-        assert i_vx   == sim.meta.inds[0]
-        assert i_sc   == sim.meta.inds[1]
-        assert i_dx   == sim.meta.inds[2]
-        assert (s==0) or i_s != sim.meta.inds[3]
-    msim.meta = sc.objdict()
-    msim.meta.inds = [i_vx, i_sc, i_dx]
-    msim.meta.vals = sc.dcp(sims[0].meta.vals)
-    msim.meta.vals.pop('seed')
-
-    print(f'Processing multisim {msim.meta.vals.values()}...')
-    if save_msims: # Warning, generates a lot of files!
-        id_str = '_'.join([str(i) for i in msim.meta.inds])
-        msimfile = f'{ut.resfolder}/final_msim{id_str}.msim'
-        msim.save(msimfile)
-
-    return msim
-
-
 def run_scens(location=None, vaccination_coverage=None, ltfu=None, # Input data
               vx_scens=None, screen_scens=None, screen_prods=None,
               multiscale=True, debug=0, n_seeds=2, verbose=-1, do_shrink=True# Sim settings
