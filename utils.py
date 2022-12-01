@@ -49,47 +49,37 @@ def process_country_files(locations, top_results=100, do_save=True):
     return all_calib_pars
 
 
-def plot_residual_burden(locations=None, background_scens=None):
+def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem=None):
     '''
-    Plot the residual burden of HPV
+    Plot the residual burden of HPV under different scenarios
     '''
     
     set_font(size=24)
 
-    results_filestem=f'{filestem}_results'
-    fig_filestem=filestem
-
     try:
-        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
+        bigdf = sc.loadobj(f'{resfolder}/{filestem}.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_{filestem}.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
+
     colors = sc.gridcolors(10)
 
     fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
     for ir, (res, reslabel) in enumerate({'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
         ax = axes[ir]
-        for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-            primary_screen = background_scen['primary_screen']
-            triage_screen = background_scen['triage_screen']
-            if primary_screen == 'via' or triage_screen == 'via':
-                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
-            else:
-                sens = background_scen['sens']
-                spec = background_scen['spec']
-                df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
-                           & (bigdf.spec == spec)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
+        for cn, scen_label in enumerate(scens):
+            df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
 
             years = np.array(df.index)[50:106]
             best = np.array(df[res])[50:106]
             low = np.array(df[f'{res}_low'])[50:106]
             high = np.array(df[f'{res}_high'])[50:106]
 
-            ax.plot(years, best, color=colors[cn], label=background_scen_label)
+            ax.plot(years, best, color=colors[cn], label=scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
         if ir:
@@ -97,28 +87,26 @@ def plot_residual_burden(locations=None, background_scens=None):
         sc.SIticks(ax)
         ax.set_title(f'{reslabel}')
     fig.tight_layout()
-    fig_name = f'{figfolder}/{fig_filestem}_health_impact.png'
+    fig_name = f'{figfolder}/{fig_filestem}.png'
     sc.savefig(fig_name, dpi=100)
 
     return
 
 
-def plot_ICER(locations=None, background_scens=None, filestem='screening'):
+def plot_ICER(locations=None, scens=None, filestem=None, fig_filestem=None):
     '''
     Plot the residual burden of HPV
     '''
 
     set_font(size=24)
-    results_filestem=f'{filestem}_results'
-    fig_filestem=filestem
 
     try:
-        bigdf = sc.loadobj(f'{resfolder}/{results_filestem}.obj')
+        bigdf = sc.loadobj(f'{resfolder}/{filestem}.obj')
     except:
         print('bigdf not available, trying to load for each location and generate it')
         alldfs = sc.autolist()
         for location in locations:
-            alldf = sc.loadobj(f'{resfolder}/{location}_{results_filestem}.obj')
+            alldf = sc.loadobj(f'{resfolder}/{location}_{filestem}.obj')
             alldfs += alldf
         bigdf = pd.concat(alldfs)
 
@@ -126,21 +114,11 @@ def plot_ICER(locations=None, background_scens=None, filestem='screening'):
     cancer_deaths = dict()
     cin_treatments = dict()
 
-    for cn, (background_scen_label, background_scen) in enumerate(background_scens.items()):
-        primary_screen = background_scen['primary_screen']
-        triage_screen = background_scen['triage_screen']
-        if primary_screen == 'via' or triage_screen == 'via':
-            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen)].groupby('year')[
-                ['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
-        else:
-            sens = background_scen['sens']
-            spec = background_scen['spec']
-            df = bigdf[(bigdf.primary_screen == primary_screen) & (bigdf.triage_screen == triage_screen) & (bigdf.sens == sens)
-                & (bigdf.spec == spec)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
-
-        cancers[background_scen_label] = np.array(df['total_cancers'])[50:106].sum()
-        cancer_deaths[background_scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
-        cin_treatments[background_scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
+    for cn, scen_label in enumerate(scens):
+        df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
+        cancers[scen_label] = np.array(df['total_cancers'])[50:106].sum()
+        cancer_deaths[scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
+        cin_treatments[scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
 
     data_for_plot = pd.DataFrame()
     data_for_plot['scen'] = np.array(list(cancers.keys()))
@@ -163,7 +141,7 @@ def plot_ICER(locations=None, background_scens=None, filestem='screening'):
     sc.SIticks(axes[0])
     sc.SIticks(axes[1])
     fig.tight_layout()
-    fig_name = f'{figfolder}/{fig_filestem}_ICER.png'
+    fig_name = f'{figfolder}/{fig_filestem}.png'
     sc.savefig(fig_name, dpi=100)
     return
 
@@ -293,14 +271,12 @@ def make_msims(sims, use_mean=True, save_msims=False):
 
     msim = hpv.MultiSim(sims)
     msim.reduce(use_mean=use_mean)
-    i_vx, i_sc, i_dx, i_s = sims[0].meta.inds
+    i_sc, i_s = sims[0].meta.inds
     for s, sim in enumerate(sims):  # Check that everything except seed matches
-        assert i_vx == sim.meta.inds[0]
-        assert i_sc == sim.meta.inds[1]
-        assert i_dx == sim.meta.inds[2]
-        assert (s == 0) or i_s != sim.meta.inds[3]
+        assert i_sc == sim.meta.inds[0]
+        assert (s == 0) or i_s != sim.meta.inds[1]
     msim.meta = sc.objdict()
-    msim.meta.inds = [i_vx, i_sc, i_dx]
+    msim.meta.inds = [i_sc]
     msim.meta.vals = sc.dcp(sims[0].meta.vals)
     msim.meta.vals.pop('seed')
 

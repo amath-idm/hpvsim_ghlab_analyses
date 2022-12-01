@@ -32,7 +32,20 @@ locations = [
     'tanzania', # 2
 ]
 
-debug = 1
+# Options for sens/spec for AVE as primary - comment out any not to run
+ave_primary_ss = [
+    [0.90,0.83],
+    [0.82,0.86],
+    [0.62,0.86],
+]
+
+# Options for sens/spec for AVE as triag - comment out any not to run
+ave_triage_ss = [
+    [0.95,0.55],
+    [0.90,0.70],
+]
+
+debug = 0
 n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
 
 
@@ -65,7 +78,7 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=
             meta.count = count
             meta.n_sims = n_sims
             meta.inds = [i_sc, i_s]
-            meta.vals = sc.objdict(sc.mergedicts(screen_scen_pars, dict(seed=i_s)))
+            meta.vals = sc.objdict(sc.mergedicts(screen_scen_pars, dict(seed=i_s, scen_label=scen_label)))
             ikw.append(sc.objdict(screen_intvs=screen_intvs, seed=i_s, label=scen_label))
             ikw[-1].meta = meta
 
@@ -94,7 +107,6 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=
     # Now strip out all the results and place them in a dataframe
     dfs = sc.autolist()
     for msim in all_msims:
-        base_sim = msim.sims[0]
         i_dx = msim.meta.inds
         msims[i_dx] = msim
         df = pd.DataFrame()
@@ -118,20 +130,16 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=
         df['n_vaccinated_low']         = msim.results['n_vaccinated'].low
         df['n_vaccinated_high']        = msim.results['n_vaccinated'].high
         df['location'] = location
-        df['ltfu'] = ltfu
-        df['primary_screen'] = gg
-        if isinstance(screen_prods[i_dx][1], str):
-            df['triage_screen'] = 'via'
-            df['sens'] = np.nan
-            df['spec'] = np.nan
-        elif screen_prods[i_dx] is None:
-            df['triage_screen'] = 'no_screen'
-            df['sens'] = np.nan
-            df['spec'] = np.nan
-        else:
-            df['triage_screen'] = 'ave'
-            df['sens'] = screen_prods[i_dx][1][1]['sens']
-            df['spec'] = screen_prods[i_dx][1][1]['spec']
+
+        # Store metadata about run
+        for var in ['primary','triage','sens','spec','ltfu']:
+            if msim.meta.vals.get(var):
+                df[var] = msim.meta.vals.get(var)
+            else:
+                df[var] = np.nan
+
+        # Store label - this will be used for plotting
+        df['scen_label'] = msim.meta.vals.scen_label
 
         dfs += df
 
@@ -153,7 +161,7 @@ if __name__ == '__main__':
     if 'run_scenarios' in to_run:
         filestem = 'screening_results'
         alldfs = sc.autolist()
-        poc_ltfus = {'HPVPOC': 0.05, 'HPV':0.3}
+        poc_ltfus = {'POC-HPV': 0.05, 'HPV':0.3}
         for location in locations:
 
             # Construct the scenarios
@@ -166,11 +174,11 @@ if __name__ == '__main__':
                 'HPV': dict(primary='hpv'),
                 'VIA': dict(primary='via')
             })
-            for sens, spec in zip([.9, .82, .62], [.83, .86, .86]):
-                screen_scens[f'AVE, sens:{sens}, spec:{spec}'] = dict(primary='ave', sens=sens, spec=spec)
-            for sens, spec in zip([.95, .9], [.55, .7]):
+            for sens, spec in ave_primary_ss:
+                screen_scens[f'AVE, {int(sens*100)}%/{int(spec*100)}%'] = dict(primary='ave', sens=sens, spec=spec)
+            for sens, spec in ave_triage_ss:
                 for poc,ltfu in poc_ltfus.items():
-                    screen_scens[f'{poc}+AVE, sens:{sens}, spec:{spec}'] = dict(primary='hpv', triage='ave', sens=sens, spec=spec, ltfu=ltfu)
+                    screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = dict(primary='hpv', triage='ave', sens=sens, spec=spec, ltfu=ltfu)
             for poc, ltfu in poc_ltfus.items():
                 screen_scens[f'{poc}+VIA'] = dict(primary='hpv', triage='via', ltfu=ltfu)
 
@@ -181,125 +189,49 @@ if __name__ == '__main__':
         bigdf = pd.concat(alldfs)
         sc.saveobj(f'{ut.resfolder}/{filestem}.obj', bigdf)
 
+
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
+
+        # First plot: comparing AVE as a primary screen to existing primary screen options
         ut.plot_residual_burden(
-            filestem='screening',
+            filestem='screening_results',
             locations=['india', 'nigeria', 'tanzania'],
-            background_scens={
-                'VIA': {
-                    'primary_screen': 'via',
-                    'triage_screen': 'no_triage'
-                },
-                'AVE, 90%/83%': {
-                     'primary_screen': 'ave',
-                     'triage_screen': 'no_triage',
-                     'sens': .9,
-                     'spec': .83
-                },
-                'AVE, 82%/86%': {
-                     'primary_screen': 'ave',
-                     'triage_screen': 'no_triage',
-                     'sens': .82,
-                     'spec': .86
-                },
-                'AVE, 62%/86%': {
-                     'primary_screen': 'ave',
-                     'triage_screen': 'no_triage',
-                     'sens': .62,
-                     'spec': .86
-                },
-                'HPV+VIA': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'via'
-                },
-                 'HPV+AVE, 95%/55%': {
-                     'primary_screen': 'hpv',
-                     'triage_screen': 'ave',
-                     'sens': .95,
-                     'spec': .55
-                },
-                'HPV+AVE, 90%/70%': {
-                     'primary_screen': 'hpv',
-                     'triage_screen': 'ave',
-                     'sens': .9,
-                     'spec': .7
-                },
-                'POC HPV+VIA': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'via'
-                },
-                'POC HPV+AVE, 95%/55%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .95,
-                    'spec': .55
-                },
-                'POC HPV+AVE, 90%/70%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .9,
-                    'spec': .7
-                },
-            }
+            scens=['HPV', 'VIA', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
+            fig_filestem='ave_primary'
         )
-        ut.plot_ICER(
-            filestem='screening',
+
+        # Second plot: comparing AVE as a triage screen against existing triage options
+        ut.plot_residual_burden(
+            filestem='screening_results',
             locations=['india', 'nigeria', 'tanzania'],
-            background_scens={
-                'VIA': {
-                    'primary_screen': 'via',
-                    'triage_screen': 'no_triage'
-                },
-                'AVE, 90%/83%': {
-                    'primary_screen': 'ave',
-                    'triage_screen': 'no_triage',
-                    'sens': .9,
-                    'spec': .83
-                },
-                'AVE, 82%/86%': {
-                    'primary_screen': 'ave',
-                    'triage_screen': 'no_triage',
-                    'sens': .82,
-                    'spec': .86
-                },
-                'AVE, 62%/86%': {
-                    'primary_screen': 'ave',
-                    'triage_screen': 'no_triage',
-                    'sens': .62,
-                    'spec': .86
-                },
-                'HPV+VIA': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'via'
-                },
-                'HPV+AVE, 95%/55%': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'ave',
-                    'sens': .95,
-                    'spec': .55
-                },
-                'HPV+AVE, 90%/70%': {
-                    'primary_screen': 'hpv',
-                    'triage_screen': 'ave',
-                    'sens': .9,
-                    'spec': .7
-                },
-                'POC HPV+VIA': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'via'
-                },
-                'POC HPV+AVE, 95%/55%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .95,
-                    'spec': .55
-                },
-                'POC HPV+AVE, 90%/70%': {
-                    'primary_screen': 'poc_hpv',
-                    'triage_screen': 'ave',
-                    'sens': .9,
-                    'spec': .7
-                },
-            }
+            scens=['HPV+VIA', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
+            fig_filestem='ave_triage'
+        )
+
+        # Third plot: Evaluating impact of POC
+        ut.plot_residual_burden(
+            filestem='screening_results',
+            locations=['india', 'nigeria', 'tanzania'],
+            scens=['HPV+VIA', 'HPV+AVE, 95%/55%', 'POC-HPV+VIA', 'POC-HPV+AVE, 95%/55%'],
+            fig_filestem='poc_effect'
+        )
+
+        ut.plot_ICER(
+            filestem='screening_results',
+            locations=['india', 'nigeria', 'tanzania'],
+            scens=[
+                'HPV',
+                'VIA',
+                'AVE, 90%/83%',
+                'AVE, 82%/86%',
+                'AVE, 62%/86%',
+                'HPV+VIA',
+                'HPV+AVE, 95%/55%',
+                'HPV+AVE, 90%/70%',
+                'POC HPV+VIA',
+                'POC HPV+AVE, 95%/55%',
+                'POC HPV+AVE, 90%/70%',
+            ],
+            fig_filestem='icer'
         )

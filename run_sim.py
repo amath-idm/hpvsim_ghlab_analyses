@@ -44,7 +44,7 @@ def make_sim_parts(location=None, vaccination_coverage=None,
 
     # Parameters
     pars = dict(
-        n_agents       = [50e3,5e3][debug],
+        n_agents       = [50e3,1e3][debug],
         dt             = [0.5,1.0][debug],
         start          = [1950,1980][debug],
         end            = 2060,
