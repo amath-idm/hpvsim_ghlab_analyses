@@ -40,7 +40,6 @@ class econ_analyzer(hpv.Analyzer):
     def apply(self, sim):
         if sim.yearvec[sim.t]>=self.start:
             ppl = sim.people
-            def count(arr): return ppl.scale_flows(hpv.true(arr))
             def av_age(arr):
                 if len(hpv.true(arr)): return np.mean(sim.people.age[hpv.true(arr)])
                 else: return np.nan
@@ -49,20 +48,26 @@ class econ_analyzer(hpv.Analyzer):
 
             # Pull out characteristics of sim to decide what resources we need
             simvals = sim.meta.vals
-            primary_screen = simvals.primary
-            triage_screen = simvals.triage
+            scen_label = simvals.scen_label
+            if scen_label != 'No screening':
+                primary_screen = simvals.primary
+                triage_screen = simvals.triage
+                resource_dict = {
+                    'hpv': 'new_hpv_screens',
+                    'poc_hpv': 'new_poc_hpv_screens',
+                    'ave': 'new_ave_screens',
+                    'via': 'new_via_screens'
+                }
+                # Resources
+                if primary_screen in ['hpv', 'poc_hpv', 'via', 'ave']:
+                    self.df.loc[li][resource_dict[primary_screen]] += sim.get_intervention('screening').n_products_used.values[li]
 
-            if primary_screen in ['hpv', 'poc_hpv', 'via', 'ave']:
-                pass
-                # self.df.loc[li].new_hpv_screens +=
+                if triage_screen in ['via', 'ave']:
+                    self.df.loc[li][resource_dict[triage_screen]] += sim.get_intervention('triage').n_products_used.values[li]
 
-            if triage_screen in ['via', 'ave']:
-                pass
-
-            # Resources
-            self.df.loc[li].new_screens += count(ppl.date_screened[:] == lt)
-            self.df.loc[li].new_cin_treatments += count(ppl.date_cin_treated[:] == lt)
-            self.df.loc[li].new_cancer_treatments += count(ppl.date_cancer_treated[:] == lt)
+                self.df.loc[li].new_thermal_ablations += sim.get_intervention('ablation').n_products_used.values[li]
+                self.df.loc[li].new_leeps += sim.get_intervention('excision').n_products_used.values[li]
+                self.df.loc[li].new_cancer_treatments += sim.get_intervention('radiation').n_products_used.values[li]
 
             # Age outputs
             self.df.loc[li].av_age_other_deaths = av_age(ppl.date_dead_other == lt)
