@@ -51,7 +51,11 @@ class econ_analyzer(hpv.Analyzer):
             scen_label = simvals.scen_label
             if scen_label != 'No screening':
                 primary_screen = simvals.primary
-                triage_screen = simvals.triage
+                if simvals.get('triage'):
+                    triage_screen = simvals.triage
+                else:
+                    triage_screen = 'no_triage'
+
                 resource_dict = {
                     'hpv': 'new_hpv_screens',
                     'poc_hpv': 'new_poc_hpv_screens',
