@@ -44,7 +44,7 @@ class econ_analyzer(hpv.Analyzer):
                 if len(hpv.true(arr)): return np.mean(sim.people.age[hpv.true(arr)])
                 else: return np.nan
             li = np.floor(sim.yearvec[sim.t])
-            lt = sim.t-1
+            lt = np.floor((sim.t-1)*sim['dt'])
 
             # Pull out characteristics of sim to decide what resources we need
             simvals = sim.meta.vals
