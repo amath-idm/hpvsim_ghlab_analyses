@@ -87,3 +87,95 @@ class econ_analyzer(hpv.Analyzer):
         self.df['new_cancer_deaths'] = sim.results['total_cancer_deaths'][self.si:]
         self.df['new_other_deaths'] = sim.results['other_deaths'][self.si:]
         return
+
+
+class test_characteristics_analyzer(hpv.Analyzer):
+    '''
+    Analyzer for computing test characteristics.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.primary_df = None
+        self.triage_df = None
+        self.primary_screen = None
+        self.triage_screen = None
+        return
+
+    def initialize(self, sim):
+        super().initialize(sim)
+
+        # Pull out characteristics of sim to decide what we need
+        simvals = sim.meta.vals
+        scen_label = simvals.scen_label
+        if scen_label != 'No screening':
+            columns = ['test_positive', 'test_negative']
+            self.primary_screen = 'screening'
+            self.primary_df = pd.DataFrame(0.0, index=pd.Index(['disease_positive', 'disease_negative'],
+                                                               name='health state'), columns=columns)
+            if simvals.get('triage'):
+                self.triage_screen = 'triage'
+                self.triage_df = pd.DataFrame(0.0, index=pd.Index(['disease_positive', 'disease_negative'],
+                                                                  name='health state'), columns=columns)
+            else:
+                self.triage_screen = None
+
+        return
+
+    def apply(self, sim):
+        if sim.yearvec[sim.t] >= sim.get_intervention(self.primary_screen).start_year:
+            disease_pos_states = ['cin2', 'cin3', 'cancerous']
+            if self.primary_screen is not None:
+                intv = sim.get_intervention(self.primary_screen).outcomes
+                test_positives = intv['positive']
+                test_negatives = intv['negative']
+
+                test_pos_disease_pos = []
+                test_neg_disease_pos = []
+                for disease_pos_state in disease_pos_states:
+                    test_pos_disease_pos_inds = sim.people[disease_pos_state][:,test_positives].sum(axis=0).nonzero()[0]
+                    if len(test_pos_disease_pos_inds):
+                        test_pos_disease_pos = np.append(test_pos_disease_pos, test_pos_disease_pos_inds)
+                    test_neg_disease_pos_inds = sim.people[disease_pos_state][:,test_negatives].sum(axis=0).nonzero()[0]
+                    if len(test_neg_disease_pos_inds):
+                        test_neg_disease_pos = np.append(test_neg_disease_pos, test_neg_disease_pos_inds)
+
+                test_pos_disease_pos = list(set(test_pos_disease_pos))
+                test_neg_disease_pos = list(set(test_neg_disease_pos))
+                test_pos_disease_neg = np.setdiff1d(test_positives, test_pos_disease_pos)
+                test_neg_disease_neg = np.setdiff1d(test_negatives, test_neg_disease_pos)
+
+                self.primary_df.loc['disease_positive'].test_positive += len(test_pos_disease_pos)
+                self.primary_df.loc['disease_negative'].test_positive += len(test_pos_disease_neg)
+                self.primary_df.loc['disease_positive'].test_negative += len(test_neg_disease_pos)
+                self.primary_df.loc['disease_negative'].test_negative += len(test_neg_disease_neg)
+
+            if self.triage_screen is not None:
+                intv = sim.get_intervention(self.triage_screen).outcomes
+                test_positives = intv['positive']
+                test_negatives = intv['negative']
+
+                test_pos_disease_pos = []
+                test_neg_disease_pos = []
+                for disease_pos_state in disease_pos_states:
+                    test_pos_disease_pos_inds = sim.people[disease_pos_state][:, test_positives].sum(axis=0).nonzero()[0]
+                    if len(test_pos_disease_pos_inds):
+                        test_pos_disease_pos = np.append(test_pos_disease_pos, test_pos_disease_pos_inds)
+                    test_neg_disease_pos_inds = sim.people[disease_pos_state][:, test_negatives].sum(axis=0).nonzero()[0]
+                    if len(test_neg_disease_pos_inds):
+                        test_neg_disease_pos = np.append(test_neg_disease_pos, test_neg_disease_pos_inds)
+
+                test_pos_disease_pos = list(set(test_pos_disease_pos))
+                test_neg_disease_pos = list(set(test_neg_disease_pos))
+                test_pos_disease_neg = np.setdiff1d(test_positives, test_pos_disease_pos)
+                test_neg_disease_neg = np.setdiff1d(test_negatives, test_neg_disease_pos)
+
+                self.triage_df.loc['disease_positive'].test_positive += len(test_pos_disease_pos)
+                self.triage_df.loc['disease_negative'].test_positive += len(test_pos_disease_neg)
+                self.triage_df.loc['disease_positive'].test_negative += len(test_neg_disease_pos)
+                self.triage_df.loc['disease_negative'].test_negative += len(test_neg_disease_neg)
+
+        return
+
+
+

@@ -18,6 +18,7 @@ import hpvsim as hpv
 import run_sim as rs
 import utils as ut
 import pars_scenarios as sp
+import analyzers as an
 
 # Comment out to not run
 to_run = [
@@ -28,8 +29,8 @@ to_run = [
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    'nigeria',  # 1
-    'tanzania', # 2
+    # 'nigeria',  # 1
+    # 'tanzania', # 2
 ]
 
 # Options for sens/spec for AVE as primary - comment out any not to run
@@ -51,7 +52,7 @@ n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
 
 #%% Functions
 
-def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=None, # Input data
+def run_scens(location=None, screen_scens=None, sens_analyzer=True, # Input data
               debug=0, n_seeds=2, verbose=-1# Sim settings
               ):
     '''
@@ -84,23 +85,22 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=
 
     # Actually run
     sc.heading(f'Running {len(ikw)} scenario sims...')
-    kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage, debug=debug, location=location)
+    kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer, debug=debug, location=location)
     all_sims = sc.parallelize(rs.run_sim, iterkwargs=ikw, kwargs=kwargs)
 
     # Rearrange sims
     sims = np.empty((len(screen_scens), n_seeds), dtype=object)
     econdfs = sc.autolist()
+    if sens_analyzer:
+        sensdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array
         i_dx, i_s = sim.meta.inds
         sims[i_dx, i_s] = sim
-        econdf = sim.get_analyzer().df
+        econdf = sim.get_analyzer(an.econ_analyzer).df
         econdf['location'] = location
         econdf['seed'] = i_s
-        econdfs += econdf
-        sim['analyzers'] = []  # Remove the analyzer so we don't need to reduce it
-
-        for var in ['primary','triage','sens','spec','ltfu']:
+        for var in ['primary', 'triage', 'sens', 'spec', 'ltfu']:
             if sim.meta.vals.get(var):
                 econdf[var] = sim.meta.vals.get(var)
             else:
@@ -109,7 +109,35 @@ def run_scens(location=None, vaccination_coverage=None, ltfu=None, screen_scens=
         # Store label - this will be used for plotting
         econdf['scen_label'] = sim.meta.vals.scen_label
 
+        if sens_analyzer:
+            sensdf_primary = sim.get_analyzer(an.test_characteristics_analyzer).primary_df
+            sensdf_triage = sim.get_analyzer(an.test_characteristics_analyzer).triage_df
+            sensdf = pd.DataFrame()
+            if sensdf_primary is not None:
+                sensdf['primary_sens'] = sensdf_primary.loc['disease_positive'].test_positive/np.sum(sensdf_primary.loc['disease_positive'])
+                sensdf['primary_spec'] = sensdf_primary.loc['disease_negative'].test_negative/np.sum(sensdf_primary.loc['disease_negative'])
+            if sensdf_triage is not None:
+                sensdf['triage_sens'] = sensdf_triage.loc['disease_positive'].test_positive/np.sum(sensdf_triage.loc['disease_positive'])
+                sensdf['triage_spec'] = sensdf_triage.loc['disease_negative'].test_negative/np.sum(sensdf_triage.loc['disease_negative'])
+            sensdf['location'] = location
+            sensdf['seed'] = i_s
+            for var in ['primary', 'triage', 'sens', 'spec', 'ltfu']:
+                if sim.meta.vals.get(var):
+                    sensdf[var] = sim.meta.vals.get(var)
+                else:
+                    sensdf[var] = np.nan
+
+            # Store label - this will be used for plotting
+            sensdf['scen_label'] = sim.meta.vals.scen_label
+            sensdfs += sensdf
+
+        econdfs += econdf
+        sim['analyzers'] = []  # Remove the analyzer so we don't need to reduce it
+
     allecondf = pd.concat(econdfs)
+    if sens_analyzer:
+        allsensdf = pd.concat(sensdfs)
+        allsensdf.to_csv(f'{ut.resfolder}/{location}_sens.csv')
     allecondf.to_csv(f'{ut.resfolder}/{location}_econ.csv')
 
     # Prepare to convert sims to msims
@@ -199,8 +227,8 @@ if __name__ == '__main__':
                     screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = dict(primary='hpv', triage='ave', sens=sens, spec=spec, ltfu=ltfu)
             for poc, ltfu in poc_ltfus.items():
                 screen_scens[f'{poc}+VIA'] = dict(primary='hpv', triage='via', ltfu=ltfu)
-
-            alldf, msims = run_scens(screen_scens=screen_scens, n_seeds=n_seeds, location=location, debug=debug)
+            sens_analyzer=True # run with a test characteristics analyzer to output test characteristics
+            alldf, msims = run_scens(screen_scens=screen_scens, sens_analyzer=sens_analyzer, n_seeds=n_seeds, location=location, debug=debug)
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)
 
@@ -214,7 +242,7 @@ if __name__ == '__main__':
         ut.plot_residual_burden(
             filestem='screening_results',
             locations=['india', 'nigeria', 'tanzania'],
-            scens=['HPV', 'VIA', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
+            scens=['No screening', 'HPV', 'VIA', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
             fig_filestem='ave_primary'
         )
 
@@ -222,7 +250,7 @@ if __name__ == '__main__':
         ut.plot_residual_burden(
             filestem='screening_results',
             locations=['india', 'nigeria', 'tanzania'],
-            scens=['HPV+VIA', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
+            scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
             fig_filestem='ave_triage'
         )
 
@@ -230,25 +258,26 @@ if __name__ == '__main__':
         ut.plot_residual_burden(
             filestem='screening_results',
             locations=['india', 'nigeria', 'tanzania'],
-            scens=['HPV+VIA', 'HPV+AVE, 95%/55%', 'POC-HPV+VIA', 'POC-HPV+AVE, 95%/55%'],
+            scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'POC-HPV+VIA', 'POC-HPV+AVE, 95%/55%'],
             fig_filestem='poc_effect'
         )
 
-        ut.plot_ICER(
-            filestem='screening_results',
-            locations=['india', 'nigeria', 'tanzania'],
-            scens=[
-                'HPV',
-                'VIA',
-                'AVE, 90%/83%',
-                'AVE, 82%/86%',
-                'AVE, 62%/86%',
-                'HPV+VIA',
-                'HPV+AVE, 95%/55%',
-                'HPV+AVE, 90%/70%',
-                'POC HPV+VIA',
-                'POC HPV+AVE, 95%/55%',
-                'POC HPV+AVE, 90%/70%',
-            ],
-            fig_filestem='icer'
-        )
+
+        # ut.plot_ICER(
+        #     filestem='screening_results',
+        #     locations=['india', 'nigeria', 'tanzania'],
+        #     scens=[
+        #         'HPV',
+        #         'VIA',
+        #         'AVE, 90%/83%',
+        #         'AVE, 82%/86%',
+        #         'AVE, 62%/86%',
+        #         'HPV+VIA',
+        #         'HPV+AVE, 95%/55%',
+        #         'HPV+AVE, 90%/70%',
+        #         'POC HPV+VIA',
+        #         'POC HPV+AVE, 95%/55%',
+        #         'POC HPV+AVE, 90%/70%',
+        #     ],
+        #     fig_filestem='icer'
+        # )

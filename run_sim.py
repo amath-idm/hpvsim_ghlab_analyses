@@ -38,7 +38,8 @@ save_plots = True
 
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None,
-                   debug=0, screen_intvs=None, multiscale=True, econ_analyzer=True):
+                   debug=0, screen_intvs=None, multiscale=True, econ_analyzer=True,
+                   sens_analyzer=False):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
 
     # Parameters
@@ -64,6 +65,8 @@ def make_sim_parts(location=None, vaccination_coverage=None,
     analyzers = sc.autolist()
     if econ_analyzer:
         analyzers += an.econ_analyzer()
+    if sens_analyzer:
+        analyzers += an.test_characteristics_analyzer()
 
     # Interventions, all added as part of specific scenarios
     interventions = sc.autolist()
@@ -114,7 +117,7 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 #%% Simulation running functions
 
 def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
-            debug=0, seed=0, vaccination_coverage=None,
+            debug=0, seed=0, vaccination_coverage=None, sens_analyzer=False,
             label=None, meta=None, verbose=0.1,
             do_save=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
@@ -128,7 +131,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
     print(msg)
 
     # Make arguments
-    args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage,
+    args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer,
                           screen_intvs=screen_intvs, debug=debug)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 

@@ -37,15 +37,20 @@ to_run = [
 
 locations = [
     'india',
-    # 'nigeria',
-    # 'tanzania'
+    'nigeria',
+    'tanzania'
 ]
 
+location_dict = {
+    'india': 'India',
+    'nigeria': 'Nigeria',
+    'tanzania': 'United Republic of Tanzania'
+}
 ex = sc.loadobj('data/ex.obj')
 life_expectancies = dict()
 for location in locations:
-    life_expectancies[location] = ex[location.capitalize()][(ex[location.capitalize()]['Time']==2030) &
-                                                            (ex[location.capitalize()]['Sex'] == 'Female')]
+    life_expectancies[location] = ex[location_dict[location]][(ex[location_dict[location]]['Time']==2030) &
+                                                            (ex[location_dict[location]]['Sex'] == 'Female')]
 dfs = sc.autolist()
 for location in locations:
     dfs += pd.read_csv(f'results/{location}_econ.csv')
@@ -177,8 +182,8 @@ alldfs = pd.concat(dfs)
 set_font(size=20)
 markers = ['.', 'v', '<', '1', 's', 'p', 'P', '*', '+', 'D', '^', 'x']
 colors = sc.gridcolors(len(scenarios))
-grouped_means = alldfs.groupby('scen_label').mean()
-grouped_means['scen_label'] = grouped_means.index.values
+grouped_means = alldfs.groupby(['scen_label','location']).mean().reset_index()
+grouped_sum = grouped_means.groupby('scen_label').sum().reset_index()
 
 scen_colors = dict()
 for scen in scenarios:
@@ -194,43 +199,103 @@ for scen in scenarios:
         scen_colors[scen] = 4
 
 scenarios_to_plot = scenarios[1:]
-f, (ax, ax2) = pl.subplots(2, 1, figsize=(16, 10), sharex=True, gridspec_kw={'height_ratios': [10, 1]})
-for i, scen in enumerate(scenarios):
-    group = grouped_means[grouped_means['scen_label'] == scen]
-    group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, color=colors[scen_colors[scen]], marker=markers[i], s=200)
-    group.plot(ax=ax2, kind='scatter', x='DALYs_averted', y='total_costs', marker=markers[i], color=colors[scen_colors[scen]], s=200)
+ymin = np.min(grouped_sum[grouped_sum['scen_label'] != 'No screening']['total_costs'])
+ymax = np.max(grouped_sum[grouped_sum['scen_label'] != 'No screening']['total_costs'])
 
-ax.set_ylim(7.5e9,24.5e9)
-ax2.set_ylim(-0.5,1)
+xmin = np.min(grouped_sum[grouped_sum['scen_label'] != 'No screening']['DALYs_averted'])
+xmax = np.max(grouped_sum[grouped_sum['scen_label'] != 'No screening']['DALYs_averted'])
+f, axes = pl.subplots(2, 2, figsize=(16, 10), gridspec_kw={'height_ratios': [10, 1], 'width_ratios': [1,10]})
+ax1 = axes[0,0]
+ax2 = axes[0,1]
+ax3 = axes[1,0]
+ax4 = axes[1,1]
+
+for i, scen in enumerate(scenarios):
+    group = grouped_sum[grouped_sum['scen_label'] == scen]
+    group.plot(ax=ax1, kind='scatter', x='DALYs_averted', y='total_costs', color=colors[scen_colors[scen]], marker=markers[i], s=200)
+    group.plot(ax=ax2, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, marker=markers[i], color=colors[scen_colors[scen]], s=200)
+    group.plot(ax=ax3, kind='scatter', x='DALYs_averted', y='total_costs', marker=markers[i], color=colors[scen_colors[scen]], s=200)
+    group.plot(ax=ax4, kind='scatter', x='DALYs_averted', y='total_costs', marker=markers[i], color=colors[scen_colors[scen]], s=200)
+
+ax1.set_ylim(ymin*0.9, ymax*1.1)
+ax2.set_ylim(ymin*0.9, ymax*1.1)
+ax3.set_ylim(-0.5,1)
+ax4.set_ylim(-0.5,1)
+
+ax1.set_xlim(-0.5,1)
+ax2.set_xlim(xmin*0.9,xmax*1.1)
+ax3.set_xlim(-0.5,1)
+ax4.set_xlim(xmin*0.9, xmax*1.1)
 
 # hide the spines between ax and ax2
-ax.spines['bottom'].set_visible(False)
-ax2.spines['top'].set_visible(False)
-ax.xaxis.tick_top()
-ax.tick_params(labeltop=False)  # don't put tick labels at the top
-ax2.xaxis.tick_bottom()
+ax1.spines['bottom'].set_visible(False)
+ax1.spines['right'].set_visible(False)
+ax2.spines['bottom'].set_visible(False)
+ax2.spines['left'].set_visible(False)
+ax3.spines['top'].set_visible(False)
+ax3.spines['right'].set_visible(False)
+ax4.spines['top'].set_visible(False)
+ax4.spines['left'].set_visible(False)
+ax3.xaxis.tick_bottom()
+ax4.xaxis.tick_bottom()
 
 d = .015  # how big to make the diagonal lines in axes coordinates
 # arguments to pass to plot, just so we don't keep repeating them
-kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
-ax.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
-ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
-
+# Start with top axes (ax1, ax2)
+kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+ax1.plot((-d/.2, +d/.2), (-d, +d), **kwargs)        # top-left diagonal
 kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
-ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
-ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+ax2.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+
+# Now bottom axes (ax3, ax4)
+d = .1  # how big to make the diagonal lines in axes coordinates
+kwargs.update(transform=ax3.transAxes)  # switch to the bottom axes
+ax3.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+d = .015  # how big to make the diagonal lines in axes coordinates
+kwargs.update(transform=ax4.transAxes)  # switch to the bottom axes
+ax4.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+
+d = .015 # how big to make the diagonal lines in axes coordinates
+# arguments to pass plot, just so we don't keep repeating them
+kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+ax1.plot((1-d,1+d), (1-d,1+d), **kwargs)
+kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+ax2.plot((-d/3,+d/3),(1-d,1+d), **kwargs)
+
+d = .1 # how big to make the diagonal lines in axes coordinates
+kwargs.update(transform=ax3.transAxes)  # switch to the bottom axes
+ax3.plot((1-d,1+d), (-d,+d), **kwargs)
+
+d = .15 # how big to make the diagonal lines in axes coordinates
+kwargs.update(transform=ax4.transAxes)  # switch to the bottom axes
+ax4.plot((-d/10,+d/10), (-d,+d), **kwargs)
 
 ax2.set_ylabel('')
+ax3.set_ylabel('')
+ax4.set_ylabel('')
+ax2.get_yaxis().set_visible(False)
 
-# ax.set_xlabel('DALYs averted')
-ax.set_ylabel('Total costs')
-ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True, title='Screening method')
-sc.SIticks(ax)
+ax4.get_yaxis().set_visible(False)
+
+ax1.set_xlabel('')
+ax2.set_xlabel('')
+ax3.set_xlabel('')
+ax1.get_xaxis().set_visible(False)
+ax2.get_xaxis().set_visible(False)
+
+
+ax4.set_xlabel('DALYs averted, 2020-2060')
+ax1.set_ylabel('Total costs, $USD 2020-2060')
+ax2.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True, title='Screening method')
+sc.SIticks(ax1)
 sc.SIticks(ax2)
+sc.SIticks(ax3)
+sc.SIticks(ax4)
 # ax2.margins()
 f.tight_layout()
 fig_name = f'{figfolder}/ICER.png'
 sc.savefig(fig_name, dpi=100)
+
 print('done')
 
 
