@@ -184,7 +184,7 @@ grouped_means['scen_label'] = grouped_means.index.values
 
 for i, scen in enumerate(scenarios):
     group = grouped_means[grouped_means['scen_label'] == scen]
-    group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, marker=markers[i], s=100)
+    group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, marker=markers[i], s=200)
 
 ax.set_xlabel('DALYs averted')
 ax.set_ylabel('Total costs')
