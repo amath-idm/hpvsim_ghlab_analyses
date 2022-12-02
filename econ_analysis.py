@@ -174,23 +174,61 @@ for location in locations:
         dfs += df
 
 alldfs = pd.concat(dfs)
-# data_for_plot = alldfs.groupby('scen_label')[['DALYs', 'total_costs']].mean()
 set_font(size=20)
 markers = ['.', 'v', '<', '1', 's', 'p', 'P', '*', '+', 'D', '^', 'x']
 colors = sc.gridcolors(len(scenarios))
-fig, ax = pl.subplots(figsize=(16, 10))
 grouped_means = alldfs.groupby('scen_label').mean()
 grouped_means['scen_label'] = grouped_means.index.values
 
+scen_colors = dict()
+for scen in scenarios:
+    if scen == 'HPV' or scen == 'VIA':
+        scen_colors[scen] = 0
+    elif scen == 'HPV+VIA' or scen == 'POC-HPV+VIA':
+        scen_colors[scen] = 1
+    elif scen[:3] == 'AVE':
+        scen_colors[scen] = 2
+    elif 'HPV+AVE' in scen:
+        scen_colors[scen] = 3
+    elif scen == 'No screening':
+        scen_colors[scen] = 4
+
+scenarios_to_plot = scenarios[1:]
+f, (ax, ax2) = pl.subplots(2, 1, figsize=(16, 10), sharex=True, gridspec_kw={'height_ratios': [10, 1]})
 for i, scen in enumerate(scenarios):
     group = grouped_means[grouped_means['scen_label'] == scen]
-    group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, marker=markers[i], s=200)
+    group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, color=colors[scen_colors[scen]], marker=markers[i], s=200)
+    group.plot(ax=ax2, kind='scatter', x='DALYs_averted', y='total_costs', marker=markers[i], color=colors[scen_colors[scen]], s=200)
 
-ax.set_xlabel('DALYs averted')
+ax.set_ylim(7.5e9,24.5e9)
+ax2.set_ylim(-0.5,1)
+
+# hide the spines between ax and ax2
+ax.spines['bottom'].set_visible(False)
+ax2.spines['top'].set_visible(False)
+ax.xaxis.tick_top()
+ax.tick_params(labeltop=False)  # don't put tick labels at the top
+ax2.xaxis.tick_bottom()
+
+d = .015  # how big to make the diagonal lines in axes coordinates
+# arguments to pass to plot, just so we don't keep repeating them
+kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+ax.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+
+kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+
+ax2.set_ylabel('')
+
+# ax.set_xlabel('DALYs averted')
 ax.set_ylabel('Total costs')
 ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True, title='Screening method')
 sc.SIticks(ax)
-fig.tight_layout()
+sc.SIticks(ax2)
+# ax2.margins()
+f.tight_layout()
 fig_name = f'{figfolder}/ICER.png'
 sc.savefig(fig_name, dpi=100)
 print('done')
