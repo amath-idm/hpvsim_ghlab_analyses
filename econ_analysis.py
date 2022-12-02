@@ -11,7 +11,22 @@ import numpy as np
 import pandas as pd
 from scipy.stats import truncnorm
 import sciris as sc
-import hpvsim as hpv
+import pylab as pl
+
+resfolder = 'results'
+figfolder = 'figures'
+datafolder = 'data'
+
+
+########################################################################
+#%% Plotting utils
+########################################################################
+
+def set_font(size=None, font='Libertinus Sans'):
+    ''' Set a custom font '''
+    sc.fonts(add=sc.thisdir(aspath=True) / 'assets' / 'LibertinusSans-Regular.otf')
+    sc.options(font=font, fontsize=size)
+    return
 
 # Comment out to not run
 to_run = [
@@ -99,7 +114,7 @@ for location in locations:
 
 simulated_cost_df = pd.concat(dfs)
 
-scenarios = np.unique(model_res['scen_label'])
+scenarios = pd.unique(model_res['scen_label'])
 
 dfs = sc.autolist()
 for location in locations:
@@ -111,6 +126,7 @@ for location in locations:
 
         ylls = []
         ylds = []
+        dalys = []
         for name, group in model_output.groupby('seed'):
             avg_age_ca_death = np.mean(group['av_age_cancer_deaths'])
             avg_age_ca = np.mean(group['av_age_cancers'])
@@ -120,10 +136,16 @@ for location in locations:
             ind = sc.findnearest(life_expectancy['AgeGrpStart'], avg_age_ca_death)
             yll = np.sum(life_expectancy['ex'][ind] * group['new_cancer_deaths'].values)
             ylls += [yll]
+            daly = yll + yld
+            dalys += [daly]
+            # daly_averted =
 
         df['ylls'] = ylls
         df['ylds'] = ylds
-        df['DALYs'] = [sum(i) for i in zip(ylls, ylds )]
+        df['DALYs'] = dalys
+        if scenario == 'No screening':
+            base_DALYs = dalys
+        df['DALYs_averted'] = base_DALYs - df['DALYs']
 
         means = model_output.groupby('seed')[['new_cancers', 'new_cancer_deaths', 'new_hpv_screens',
                                               'new_poc_hpv_screens', 'new_via_screens', 'new_ave_screens',
@@ -146,6 +168,22 @@ for location in locations:
         dfs += df
 
 alldfs = pd.concat(dfs)
+# data_for_plot = alldfs.groupby('scen_label')[['DALYs', 'total_costs']].mean()
+set_font(size=20)
+markers = ['.', 'v', '<', '1', 's', 'p', 'P', '*', '+', 'D', '^', 'x']
+colors = sc.gridcolors(len(scenarios))
+fig, ax = pl.subplots(figsize=(16, 10))
+grouped = alldfs.groupby('scen_label')
+for i, (key, group) in enumerate(grouped):
+    group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=key, marker=markers[i], s=100)
+
+ax.set_xlabel('DALYs averted')
+ax.set_ylabel('Total costs')
+ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True, title='Screening method')
+sc.SIticks(ax)
+fig.tight_layout()
+fig_name = f'{figfolder}/ICER.png'
+sc.savefig(fig_name, dpi=100)
 print('done')
 
 
