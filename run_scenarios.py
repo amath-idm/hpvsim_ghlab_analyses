@@ -29,8 +29,8 @@ to_run = [
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    # 'nigeria',  # 1
-    # 'tanzania', # 2
+    'nigeria',  # 1
+    'tanzania', # 2
 ]
 
 # Options for sens/spec for AVE as primary - comment out any not to run
@@ -114,14 +114,14 @@ def run_scens(location=None, screen_scens=None, sens_analyzer=True, # Input data
             sensdf_triage = sim.get_analyzer(an.test_characteristics_analyzer).triage_df
             sensdf = pd.DataFrame()
             if sensdf_primary is not None:
-                sensdf['primary_sens'] = sensdf_primary.loc['disease_positive'].test_positive/np.sum(sensdf_primary.loc['disease_positive'])
-                sensdf['primary_spec'] = sensdf_primary.loc['disease_negative'].test_negative/np.sum(sensdf_primary.loc['disease_negative'])
+                sensdf['primary_sens'] = [sensdf_primary.loc['disease_positive'].test_positive/np.sum(sensdf_primary.loc['disease_positive'])]
+                sensdf['primary_spec'] = [sensdf_primary.loc['disease_negative'].test_negative/np.sum(sensdf_primary.loc['disease_negative'])]
             else:
                 sensdf['primary_sens'] = np.nan
                 sensdf['primary_spec'] = np.nan
             if sensdf_triage is not None:
-                sensdf['triage_sens'] = sensdf_triage.loc['disease_positive'].test_positive/np.sum(sensdf_triage.loc['disease_positive'])
-                sensdf['triage_spec'] = sensdf_triage.loc['disease_negative'].test_negative/np.sum(sensdf_triage.loc['disease_negative'])
+                sensdf['triage_sens'] = [sensdf_triage.loc['disease_positive'].test_positive/np.sum(sensdf_triage.loc['disease_positive'])]
+                sensdf['triage_spec'] = [sensdf_triage.loc['disease_negative'].test_negative/np.sum(sensdf_triage.loc['disease_negative'])]
             else:
                 sensdf['triage_sens'] = np.nan
                 sensdf['triage_spec'] = np.nan
@@ -243,30 +243,30 @@ if __name__ == '__main__':
 
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
+        for location in ['india', 'nigeria', 'tanzania']:
+            # First plot: comparing AVE as a primary screen to existing primary screen options
+            ut.plot_residual_burden(
+                filestem='screening_results',
+                locations=[location],
+                scens=['No screening', 'HPV', 'VIA', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
+                fig_filestem=f'ave_primary_{location}'
+            )
 
-        # First plot: comparing AVE as a primary screen to existing primary screen options
-        ut.plot_residual_burden(
-            filestem='screening_results',
-            locations=['india', 'nigeria', 'tanzania'],
-            scens=['No screening', 'HPV', 'VIA', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
-            fig_filestem='ave_primary'
-        )
+            # Second plot: comparing AVE as a triage screen against existing triage options
+            ut.plot_residual_burden(
+                filestem='screening_results',
+                locations=[location],
+                scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
+                fig_filestem=f'ave_triage_{location}'
+            )
 
-        # Second plot: comparing AVE as a triage screen against existing triage options
-        ut.plot_residual_burden(
-            filestem='screening_results',
-            locations=['india', 'nigeria', 'tanzania'],
-            scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
-            fig_filestem='ave_triage'
-        )
-
-        # Third plot: Evaluating impact of POC
-        ut.plot_residual_burden(
-            filestem='screening_results',
-            locations=['india', 'nigeria', 'tanzania'],
-            scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'POC-HPV+VIA', 'POC-HPV+AVE, 95%/55%'],
-            fig_filestem='poc_effect'
-        )
+            # Third plot: Evaluating impact of POC
+            ut.plot_residual_burden(
+                filestem='screening_results',
+                locations=[location],
+                scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'POC-HPV+VIA', 'POC-HPV+AVE, 95%/55%'],
+                fig_filestem=f'poc_effect_{location}'
+            )
 
 
         # ut.plot_ICER(

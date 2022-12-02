@@ -68,9 +68,8 @@ def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem
 
     colors = sc.gridcolors(10)
 
-    fig, axes = pl.subplots(2, 1, figsize=(10, 10), sharex=True)
-    for ir, (res, reslabel) in enumerate({'total_cancers': 'Annual cases of cervical cancer', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
-        ax = axes[ir]
+    for ir, (res, reslabel) in enumerate({'asr_cancer': 'Cervical cancer incidence rate (per 100,000)', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
+        fig, ax = pl.subplots(figsize=(16, 10))
         for cn, scen_label in enumerate(scens):
             df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
 
@@ -82,13 +81,16 @@ def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem
             ax.plot(years, best, color=colors[cn], label=scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
-        if ir:
-            ax.legend(loc='upper left')
+        if res == 'asr_cancer':
+            ax.plot(years, np.full(len(years), fill_value=4), linestyle='dashed', label='Elimination target')
+            ax.set_ylim([0,1.1*max(high)])
+        ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True)
         sc.SIticks(ax)
-        ax.set_title(f'{reslabel}')
-    fig.tight_layout()
-    fig_name = f'{figfolder}/{fig_filestem}.png'
-    sc.savefig(fig_name, dpi=100)
+        ax.set_ylabel(f'{reslabel}')
+        ax.set_title(f'{reslabel} in {location.capitalize()}')
+        fig.tight_layout()
+        fig_name = f'{figfolder}/{res}_{fig_filestem}.png'
+        sc.savefig(fig_name, dpi=100)
 
     return
 
