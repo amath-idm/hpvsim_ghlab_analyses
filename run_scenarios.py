@@ -116,9 +116,15 @@ def run_scens(location=None, screen_scens=None, sens_analyzer=True, # Input data
             if sensdf_primary is not None:
                 sensdf['primary_sens'] = sensdf_primary.loc['disease_positive'].test_positive/np.sum(sensdf_primary.loc['disease_positive'])
                 sensdf['primary_spec'] = sensdf_primary.loc['disease_negative'].test_negative/np.sum(sensdf_primary.loc['disease_negative'])
+            else:
+                sensdf['primary_sens'] = np.nan
+                sensdf['primary_spec'] = np.nan
             if sensdf_triage is not None:
                 sensdf['triage_sens'] = sensdf_triage.loc['disease_positive'].test_positive/np.sum(sensdf_triage.loc['disease_positive'])
                 sensdf['triage_spec'] = sensdf_triage.loc['disease_negative'].test_negative/np.sum(sensdf_triage.loc['disease_negative'])
+            else:
+                sensdf['triage_sens'] = np.nan
+                sensdf['triage_spec'] = np.nan
             sensdf['location'] = location
             sensdf['seed'] = i_s
             for var in ['primary', 'triage', 'sens', 'spec', 'ltfu']:
