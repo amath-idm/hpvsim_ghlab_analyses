@@ -63,10 +63,8 @@ def run_screen_test(location=None, n_draws=1, sens_vals=None, spec_vals=None, # 
     n_sims = len(screen_scens) * n_draws * n_draws
 
     for i_sc, scen_label, screen_scen_pars in screen_scens.enumitems():
-        for i_d1 in range(n_draws):
-            for i_d2 in range(n_draws):
-                sens = sens_vals[i_d1]
-                spec = spec_vals[i_d2]
+        for i_d1, sens in enumerate(sens_vals):
+            for i_d2, spec in enumerate(spec_vals):
                 screen_scen_pars['sens'] = sens
                 screen_scen_pars['spec'] = spec
                 screen_intvs = sp.get_screen_intvs(location=location, **screen_scen_pars)
@@ -221,8 +219,8 @@ if __name__ == '__main__':
         alldfs = sc.autolist()
         for location in locations:
 
-            sens_vals = np.random.uniform(0, 1, n_draws)
-            spec_vals = np.random.uniform(0, 1, n_draws)
+            sens_vals = np.linspace(0, 1, n_draws)
+            spec_vals = np.linspace(0, 1, n_draws)
 
             screen_scens = sc.objdict({
                 'AVE': dict(primary='ave'),
