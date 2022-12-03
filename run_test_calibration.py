@@ -31,8 +31,7 @@ locations = [
 
 
 debug = 0
-n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
-n_draws = [240, 1][debug]
+n_draws = [20, 1][debug]
 
 #%% Functions
 
