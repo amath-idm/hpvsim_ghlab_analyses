@@ -61,9 +61,10 @@ def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
         new_neg_vals.probability = 1-posval
         new_states += new_pos_vals
         new_states += new_neg_vals
+    new_states_df = pd.concat(new_states)
 
     # Make the ave product
-    ave = hpv.dx(pd.concat([not_changing, new_states]), hierarchy=['positive', 'negative'])
+    ave = hpv.dx(pd.concat([not_changing, new_states_df]), hierarchy=['positive', 'negative'])
     return ave
 
 
