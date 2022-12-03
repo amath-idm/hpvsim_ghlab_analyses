@@ -52,7 +52,7 @@ n_seeds = [5, 1][debug] # How many seeds to use for stochasticity in projections
 
 #%% Functions
 
-def run_scens(location=None, screen_scens=None, sens_analyzer=True, # Input data
+def run_scens(location=None, screen_scens=None, # Input data
               debug=0, n_seeds=2, verbose=-1# Sim settings
               ):
     '''
@@ -85,14 +85,12 @@ def run_scens(location=None, screen_scens=None, sens_analyzer=True, # Input data
 
     # Actually run
     sc.heading(f'Running {len(ikw)} scenario sims...')
-    kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer, debug=debug, location=location)
+    kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage, debug=debug, location=location)
     all_sims = sc.parallelize(rs.run_sim, iterkwargs=ikw, kwargs=kwargs)
 
     # Rearrange sims
     sims = np.empty((len(screen_scens), n_seeds), dtype=object)
     econdfs = sc.autolist()
-    if sens_analyzer:
-        sensdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array
         i_dx, i_s = sim.meta.inds
@@ -108,42 +106,10 @@ def run_scens(location=None, screen_scens=None, sens_analyzer=True, # Input data
 
         # Store label - this will be used for plotting
         econdf['scen_label'] = sim.meta.vals.scen_label
-
-        if sens_analyzer:
-            sensdf_primary = sim.get_analyzer(an.test_characteristics_analyzer).primary_df
-            sensdf_triage = sim.get_analyzer(an.test_characteristics_analyzer).triage_df
-            sensdf = pd.DataFrame()
-            if sensdf_primary is not None:
-                sensdf['primary_sens'] = [sensdf_primary.loc['disease_positive'].test_positive/np.sum(sensdf_primary.loc['disease_positive'])]
-                sensdf['primary_spec'] = [sensdf_primary.loc['disease_negative'].test_negative/np.sum(sensdf_primary.loc['disease_negative'])]
-            else:
-                sensdf['primary_sens'] = np.nan
-                sensdf['primary_spec'] = np.nan
-            if sensdf_triage is not None:
-                sensdf['triage_sens'] = [sensdf_triage.loc['disease_positive'].test_positive/np.sum(sensdf_triage.loc['disease_positive'])]
-                sensdf['triage_spec'] = [sensdf_triage.loc['disease_negative'].test_negative/np.sum(sensdf_triage.loc['disease_negative'])]
-            else:
-                sensdf['triage_sens'] = np.nan
-                sensdf['triage_spec'] = np.nan
-            sensdf['location'] = location
-            sensdf['seed'] = i_s
-            for var in ['primary', 'triage', 'sens', 'spec', 'ltfu']:
-                if sim.meta.vals.get(var):
-                    sensdf[var] = sim.meta.vals.get(var)
-                else:
-                    sensdf[var] = np.nan
-
-            # Store label - this will be used for plotting
-            sensdf['scen_label'] = sim.meta.vals.scen_label
-            sensdfs += sensdf
-
         econdfs += econdf
         sim['analyzers'] = []  # Remove the analyzer so we don't need to reduce it
 
     allecondf = pd.concat(econdfs)
-    if sens_analyzer:
-        allsensdf = pd.concat(sensdfs)
-        allsensdf.to_csv(f'{ut.resfolder}/{location}_sens.csv')
     allecondf.to_csv(f'{ut.resfolder}/{location}_econ.csv')
 
     # Prepare to convert sims to msims
@@ -233,8 +199,7 @@ if __name__ == '__main__':
                     screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = dict(primary='hpv', triage='ave', sens=sens, spec=spec, ltfu=ltfu)
             for poc, ltfu in poc_ltfus.items():
                 screen_scens[f'{poc}+VIA'] = dict(primary='hpv', triage='via', ltfu=ltfu)
-            sens_analyzer=True # run with a test characteristics analyzer to output test characteristics
-            alldf, msims = run_scens(screen_scens=screen_scens, sens_analyzer=sens_analyzer, n_seeds=n_seeds, location=location, debug=debug)
+            alldf, msims = run_scens(screen_scens=screen_scens, n_seeds=n_seeds, location=location, debug=debug)
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)
 

@@ -168,7 +168,7 @@ def plot_sweeps(df=None, locations=None, screen_scens=None):
             axc = fig.add_subplot(gs[0, 2])
             pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
 
-            fig_name = f'{figfolder}/{location}_AVE_sens_{to_plot}.png'
+            fig_name = f'{figfolder}/AVE_sens_{to_plot}_{location}.png'
             sc.savefig(fig_name, dpi=100)
 
             fig = pl.figure(figsize=(12, 10))
