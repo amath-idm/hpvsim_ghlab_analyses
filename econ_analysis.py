@@ -37,8 +37,8 @@ to_run = [
 
 locations = [
     'india',
-    # 'nigeria',
-    # 'tanzania'
+    'nigeria',
+    'tanzania'
 ]
 
 location_dict = {

@@ -20,7 +20,11 @@ import utils as ut
 import pars_scenarios as sp
 import analyzers as an
 
-
+# Comment out to not run
+to_run = [
+    # 'run_scenarios',
+    'plot_scenarios',
+]
 
 # Comment out locations to not run
 locations = [
@@ -29,6 +33,9 @@ locations = [
     'tanzania', # 2
 ]
 
+resfolder = 'results'
+figfolder = 'figures'
+datafolder = 'data'
 
 debug = 0
 n_draws = [20, 1][debug]
@@ -129,17 +136,26 @@ if __name__ == '__main__':
     #################################################################
     # Run scenarios (usually on VMs, runs n_seeds in parallel over M scenarios)
 
-    filestem = 'screen_test_results'
-    alldfs = sc.autolist()
-    for location in locations:
+    filestem = 'sens_calibration'
+    if 'run_scenarios' in to_run:
+        alldfs = sc.autolist()
+        for location in locations:
 
-        sens_vals = np.random.uniform(0, 1, n_draws)
-        spec_vals = np.random.uniform(0, 1, n_draws)
+            sens_vals = np.random.uniform(0, 1, n_draws)
+            spec_vals = np.random.uniform(0, 1, n_draws)
 
-        screen_scens = sc.objdict({
-            'AVE': dict(primary='ave'),
-            'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
-        })
-        df = run_screen_test(screen_scens=screen_scens, n_draws=n_draws,
-                                       sens_vals=sens_vals, spec_vals=spec_vals,
-                                       location=location, debug=debug)
+            screen_scens = sc.objdict({
+                'AVE': dict(primary='ave'),
+                'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
+            })
+            df = run_screen_test(screen_scens=screen_scens, n_draws=n_draws,
+                                           sens_vals=sens_vals, spec_vals=spec_vals,
+                                           location=location, debug=debug)
+
+    if 'plot_scenarios' in to_run:
+        sensdfs = sc.autolist()
+        for location in locations:
+            sensdfs += pd.read_csv(f'results/{location}_{filestem}.csv')
+        sens_res = pd.concat(sensdfs)
+
+        print('done')
