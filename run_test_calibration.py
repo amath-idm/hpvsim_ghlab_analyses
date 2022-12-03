@@ -23,8 +23,8 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    # 'run_scenarios',
-    'plot_scenarios',
+    'run_test_calib',
+    # 'plot_test_calib',
 ]
 
 # Comment out locations to not run
@@ -39,11 +39,11 @@ figfolder = 'figures'
 datafolder = 'data'
 
 debug = 0
-n_draws = [20, 1][debug]
+n_draws = [1000, 5][debug]
 
 #%% Functions
 
-def make_AVE(precin, cin1, cin2, cin3, cancerous):
+def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
     '''
     Make AVE product using P(T+| health state) for health states HPV, CIN1, CIN2, CIN3, and cancer
     '''
@@ -67,10 +67,10 @@ def make_AVE(precin, cin1, cin2, cin3, cancerous):
     return ave
 
 
-def run_screen_test(location=None, n_draws=1, sens_vals=None, spec_vals=None, # Input data
+def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
                     screen_scens=None, # Input data
                     debug=0, verbose=-1# Sim settings
-              ):
+                    ):
     '''
     Run all screening/triage product scenarios for a given location
     '''
@@ -85,22 +85,27 @@ def run_screen_test(location=None, n_draws=1, sens_vals=None, spec_vals=None, # 
     # Set up iteration arguments
     ikw = []
     count = 0
-    n_sims = len(screen_scens) * n_draws * n_draws
+    n_sims = len(screen_scens) * n_draws
 
     for i_sc, scen_label, screen_scen_pars in screen_scens.enumitems():
-        for i_d1, sens in enumerate(sens_vals):
-            for i_d2, spec in enumerate(spec_vals):
-                screen_scen_pars['sens'] = sens
-                screen_scen_pars['spec'] = spec
-                screen_intvs = sp.get_screen_intvs(location=location, **screen_scen_pars)
-                count += 1
-                meta = sc.objdict()
-                meta.count = count
-                meta.n_sims = n_sims
-                meta.inds = [i_sc, i_d1, i_d2]
-                meta.vals = sc.objdict(sc.mergedicts(screen_scen_pars, dict(scen_label=scen_label)))
-                ikw.append(sc.objdict(screen_intvs=screen_intvs, label=scen_label))
-                ikw[-1].meta = meta
+        for i_d in range(n_draws):
+            test_pos_val = dict()
+            for key,val in test_pos_vals.items():
+                test_pos_val[key] = val[i_d]
+            AVE = make_AVE(**test_pos_val)
+            if screen_scen_pars['primary']=='ave':
+                screen_scen_pars['primary'] = AVE
+            elif screen_scen_pars['triage']=='ave':
+                screen_scen_pars['triage'] = AVE
+            screen_intvs = sp.get_screen_intvs(location=location, **screen_scen_pars)
+            count += 1
+            meta = sc.objdict()
+            meta.count = count
+            meta.n_sims = n_sims
+            meta.inds = [i_sc, i_d]
+            meta.vals = sc.objdict(sc.mergedicts(screen_scen_pars, dict(scen_label=scen_label), test_pos_val))
+            ikw.append(sc.objdict(screen_intvs=screen_intvs, label=scen_label))
+            ikw[-1].meta = meta
 
     # Actually run
     sc.heading(f'Running {len(ikw)} scenario sims...')
@@ -113,8 +118,8 @@ def run_screen_test(location=None, n_draws=1, sens_vals=None, spec_vals=None, # 
     sensdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array
-        i_dx, i_d1, i_d2 = sim.meta.inds
-        sims[i_dx, i_d1, i_d2] = sim
+        i_dx, i_d = sim.meta.inds
+        sims[i_dx, i_d] = sim
 
         sensdf_primary = sim.get_analyzer(an.test_characteristics_analyzer).primary_df
         sensdf_triage = sim.get_analyzer(an.test_characteristics_analyzer).triage_df
@@ -240,7 +245,7 @@ if __name__ == '__main__':
     # Run scenarios (usually on VMs, runs n_seeds in parallel over M scenarios)
 
     filestem = 'sens_calibration'
-    if 'run_scenarios' in to_run:
+    if 'run_test_calib' in to_run:
         alldfs = sc.autolist()
         for location in locations:
 
@@ -252,16 +257,23 @@ if __name__ == '__main__':
             cin2_vals = np.random.uniform(0.2, .7, n_draws)
             cin3_vals = np.random.uniform(0.3, 1, n_draws)
             cancerous_vals = np.random.uniform(0.6, 1, n_draws)
+            test_pos_vals ={
+                'precin': precin_vals,
+                'cin1': cin1_vals,
+                'cin2': cin2_vals,
+                'cin3': cin3_vals,
+                'cancerous': cancerous_vals
+            }
 
             screen_scens = sc.objdict({
                 'AVE': dict(primary='ave'),
                 'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
             })
             df = run_screen_test(screen_scens=screen_scens, n_draws=n_draws,
-                                           sens_vals=sens_vals, spec_vals=spec_vals,
-                                           location=location, debug=debug)
+                                 test_pos_vals=test_pos_vals, location=location,
+                                 debug=debug)
 
-    if 'plot_scenarios' in to_run:
+    if 'plot_test_calib' in to_run:
         sensdfs = sc.autolist()
         for location in locations:
             sensdfs += pd.read_csv(f'results/{location}_{filestem}.csv')
