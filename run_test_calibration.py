@@ -96,7 +96,7 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
             AVE = make_AVE(**test_pos_val)
             if screen_scen_pars['primary']=='ave':
                 screen_scen_pars['primary'] = AVE
-            elif screen_scen_pars['triage']=='ave':
+            elif 'triage' in screen_scen_pars.keys():
                 screen_scen_pars['triage'] = AVE
             screen_intvs = sp.get_screen_intvs(location=location, **screen_scen_pars)
             count += 1
