@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import sciris as sc
 import pylab as pl
+import hpvsim as hpv
 
 # Imports from this repository
 import run_sim as rs
@@ -41,6 +42,30 @@ debug = 0
 n_draws = [20, 1][debug]
 
 #%% Functions
+
+def make_AVE(precin, cin1, cin2, cin3, cancerous):
+    '''
+    Make AVE product using P(T+| health state) for health states HPV, CIN1, CIN2, CIN3, and cancer
+    '''
+
+    basedf = pd.read_csv('dx_pars.csv')
+    not_changing_states = ['susceptible', 'latent']
+    not_changing = basedf.loc[basedf.state.isin(not_changing_states)].copy()
+
+    new_states = sc.autolist()
+    for state, posval in zip(['precin', 'cin1', 'cin2', 'cin3', 'cancerous'],
+                             [precin, cin1, cin2, cin3, cancerous]):
+        new_pos_vals = basedf.loc[(basedf.state == state) & (basedf.result == 'positive')].copy()
+        new_pos_vals.probability = posval
+        new_neg_vals = basedf.loc[(basedf.state == state) & (basedf.result == 'negative')].copy()
+        new_neg_vals.probability = 1-posval
+        new_states += new_pos_vals
+        new_states += new_neg_vals
+
+    # Make the ave product
+    ave = hpv.dx(pd.concat([not_changing, new_states]), hierarchy=['positive', 'negative'])
+    return ave
+
 
 def run_screen_test(location=None, n_draws=1, sens_vals=None, spec_vals=None, # Input data
                     screen_scens=None, # Input data
@@ -221,6 +246,12 @@ if __name__ == '__main__':
 
             sens_vals = np.linspace(0, 1, n_draws)
             spec_vals = np.linspace(0, 1, n_draws)
+
+            precin_vals = np.random.uniform(0, .5, n_draws)
+            cin1_vals = np.random.uniform(0, .5, n_draws)
+            cin2_vals = np.random.uniform(0.2, .7, n_draws)
+            cin3_vals = np.random.uniform(0.3, 1, n_draws)
+            cancerous_vals = np.random.uniform(0.6, 1, n_draws)
 
             screen_scens = sc.objdict({
                 'AVE': dict(primary='ave'),
