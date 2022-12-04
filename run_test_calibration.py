@@ -70,7 +70,7 @@ def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
 
 def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
                     screen_scens=None, # Input data
-                    debug=0, verbose=-1, end=2040# Sim settings
+                    debug=0, verbose=-1, end=2060# Sim settings
                     ):
     '''
     Run all screening/triage product scenarios for a given location
