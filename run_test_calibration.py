@@ -70,7 +70,7 @@ def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
 
 def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
                     screen_scens=None, # Input data
-                    debug=0, verbose=-1# Sim settings
+                    debug=0, verbose=-1, end=2040# Sim settings
                     ):
     '''
     Run all screening/triage product scenarios for a given location
@@ -113,11 +113,11 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
     # Actually run
     sc.heading(f'Running {len(ikw)} scenario sims...')
     kwargs = dict(use_calib_pars=True, verbose=verbose, vaccination_coverage=vaccination_coverage,
-                  sens_analyzer=True, debug=debug, location=location)
+                  sens_analyzer=True, debug=debug, location=location, end=end)
     all_sims = sc.parallelize(rs.run_sim, iterkwargs=ikw, kwargs=kwargs)
 
     # Rearrange sims
-    sims = np.empty((len(screen_scens), n_draws, n_draws), dtype=object)
+    sims = np.empty((len(screen_scens), n_draws), dtype=object)
     sensdfs = sc.autolist()
 
     for sim in all_sims:  # Unflatten array

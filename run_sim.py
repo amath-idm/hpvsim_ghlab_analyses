@@ -39,15 +39,16 @@ save_plots = True
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None,
                    debug=0, screen_intvs=None, multiscale=True, econ_analyzer=True,
-                   sens_analyzer=False):
+                   sens_analyzer=False, end=None):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
-
+    if end is None:
+        end = 2060
     # Parameters
     pars = dict(
         n_agents       = [50e3,1e3][debug],
         dt             = [0.5,1.0][debug],
         start          = [1950,1980][debug],
-        end            = 2060,
+        end            = end,
         network        = 'default',
         location       = location,
         debut          = dp.debut[location],
@@ -118,7 +119,7 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 
 def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
             debug=0, seed=0, vaccination_coverage=None, sens_analyzer=False,
-            label=None, meta=None, verbose=0.1,
+            label=None, meta=None, verbose=0.1, end=None,
             do_save=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
 
@@ -132,7 +133,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer,
-                          screen_intvs=screen_intvs, debug=debug)
+                          screen_intvs=screen_intvs, end=end, debug=debug)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 
     # Store metadata
