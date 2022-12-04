@@ -23,7 +23,8 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    'run_test_calib',
+    # 'run_test_calib',
+    'analyze_test_calib',
     # 'plot_test_calib',
 ]
 
@@ -157,85 +158,83 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
     return allsensdf
 
 
-def plot_sweeps(df=None, locations=None, screen_scens=None):
+def plot_sweeps(df=None, location=None, screen_scens=None):
+    for screen_scen in screen_scens:
+        df_to_plot = df[df.scen_label == screen_scen].groupby(['sens', 'spec']).mean().reset_index()
+        if screen_scen == 'AVE':
+            to_plot = 'primary'
+        else:
+            to_plot = 'triage'
 
-    for location in locations:
-        for screen_scen in screen_scens:
-            df_to_plot = df[(df.scen_label==screen_scen) & (df.location == location)].groupby(['sens', 'spec']).mean().reset_index()
-            if screen_scen == 'AVE':
-                to_plot = 'primary'
-            else:
-                to_plot = 'triage'
+        fig = pl.figure(figsize=(12, 10))
+        gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
+        pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
+        x = np.array(df_to_plot['sens'])
+        y = np.array(df_to_plot['spec'])
+        z = np.array(df_to_plot[f'{to_plot}_sens'])
 
-            fig = pl.figure(figsize=(12, 10))
-            gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
-            pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
-            x = np.array(df_to_plot['sens'])
-            y = np.array(df_to_plot['spec'])
-            z = np.array(df_to_plot[f'{to_plot}_sens'])
+        z_min = 0
+        z_max = round(max(z), 1)
+        npts = 100
+        scale = 0.08
+        xi = np.linspace(np.min(x), np.max(x), npts)
+        yi = np.linspace(np.min(y), np.max(y), npts)
+        xx, yy = np.meshgrid(xi, yi)
+        zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
+        scolors = sc.vectocolor(z, cmap='plasma', minval=z_min, maxval=z_max)
 
-            z_min = 0
-            z_max = round(max(z), 1)
-            npts = 100
-            scale = 0.08
-            xi = np.linspace(np.min(x), np.max(x), npts)
-            yi = np.linspace(np.min(y), np.max(y), npts)
-            xx, yy = np.meshgrid(xi, yi)
-            zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
-            scolors = sc.vectocolor(z, cmap='plasma', minval=z_min, maxval=z_max)
+        # Plot heatmap
+        axa = fig.add_subplot(gs[0, 0])
+        ima = axa.contourf(xx, yy, zz, cmap='plasma', levels=np.linspace(z_min, z_max, 100))
+        axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3] * 3, s=50, linewidth=0.1, alpha=0.5)
+        axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
+        axa.set_xlabel('Input sensitivity of AVE')
+        axa.set_ylabel('Input specificity of AVE')
+        axa.set_xlim([np.min(x), np.max(x)])
+        axa.set_ylim([np.min(y), np.max(y)])
+        axa.set_title(f'Model sensitivity of AVE, {to_plot}', fontsize=28)
 
-            # Plot heatmap
-            axa = fig.add_subplot(gs[0, 0])
-            ima = axa.contourf(xx, yy, zz, cmap='plasma', levels=np.linspace(z_min, z_max, 100))
-            axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3] * 3, s=50, linewidth=0.1, alpha=0.5)
-            axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
-            axa.set_xlabel('Input sensitivity of AVE')
-            axa.set_ylabel('Input specificity of AVE')
-            axa.set_xlim([np.min(x), np.max(x)])
-            axa.set_ylim([np.min(y), np.max(y)])
-            axa.set_title(f'Model sensitivity of AVE, {to_plot}', fontsize=28)
+        # Colorbar
+        axc = fig.add_subplot(gs[0, 2])
+        pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
 
-            # Colorbar
-            axc = fig.add_subplot(gs[0, 2])
-            pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
+        fig_name = f'{figfolder}/AVE_sens_{to_plot}_{location}.png'
+        sc.savefig(fig_name, dpi=100)
 
-            fig_name = f'{figfolder}/AVE_sens_{to_plot}_{location}.png'
-            sc.savefig(fig_name, dpi=100)
+        fig = pl.figure(figsize=(12, 10))
+        gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
+        pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
+        x = np.array(df_to_plot['sens'])
+        y = np.array(df_to_plot['spec'])
+        z = np.array(df_to_plot[f'{to_plot}_spec'])
 
-            fig = pl.figure(figsize=(12, 10))
-            gs = fig.add_gridspec(1, 3, width_ratios=[20, .1, 1])
-            pl.subplots_adjust(hspace=0.25, wspace=0.1, left=0.1, right=0.9, top=0.95, bottom=0.1)
-            x = np.array(df_to_plot['sens'])
-            y = np.array(df_to_plot['spec'])
-            z = np.array(df_to_plot[f'{to_plot}_spec'])
+        z_min = 0
+        z_max = round(max(z), 1)
+        npts = 100
+        scale = 0.08
+        xi = np.linspace(np.min(x), np.max(x), npts)
+        yi = np.linspace(np.min(y), np.max(y), npts)
+        xx, yy = np.meshgrid(xi, yi)
+        zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
+        scolors = sc.vectocolor(z, cmap='plasma', minval=z_min, maxval=z_max)
 
-            z_min = 0
-            z_max = round(max(z), 1)
-            npts = 100
-            scale = 0.08
-            xi = np.linspace(np.min(x), np.max(x), npts)
-            yi = np.linspace(np.min(y), np.max(y), npts)
-            xx, yy = np.meshgrid(xi, yi)
-            zz = sc.gauss2d(x, y, z, xi, yi, scale=scale, xscale=1, yscale=1, grid=True)
-            scolors = sc.vectocolor(z, cmap='plasma', minval=z_min, maxval=z_max)
+        # Plot heatmap
+        axa = fig.add_subplot(gs[0, 0])
+        ima = axa.contourf(xx, yy, zz, cmap='plasma', levels=np.linspace(z_min, z_max, 100))
+        axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3] * 3, s=50, linewidth=0.1, alpha=0.5)
+        axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
+        axa.set_xlabel('Input sensitivity of AVE')
+        axa.set_ylabel('Input specificity of AVE')
+        axa.set_xlim([np.min(x), np.max(x)])
+        axa.set_ylim([np.min(y), np.max(y)])
+        axa.set_title(f'Model specificity of AVE, {to_plot}', fontsize=28)
 
-            # Plot heatmap
-            axa = fig.add_subplot(gs[0, 0])
-            ima = axa.contourf(xx, yy, zz, cmap='plasma', levels=np.linspace(z_min, z_max, 100))
-            axa.scatter(x, y, marker='o', c=scolors, edgecolor=[0.3] * 3, s=50, linewidth=0.1, alpha=0.5)
-            axa.contour(xx, yy, zz, levels=7, linewidths=0.5, colors='k')
-            axa.set_xlabel('Input sensitivity of AVE')
-            axa.set_ylabel('Input specificity of AVE')
-            axa.set_xlim([np.min(x), np.max(x)])
-            axa.set_ylim([np.min(y), np.max(y)])
-            axa.set_title(f'Model specificity of AVE, {to_plot}', fontsize=28)
+        # Colorbar
+        axc = fig.add_subplot(gs[0, 2])
+        pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
 
-            # Colorbar
-            axc = fig.add_subplot(gs[0, 2])
-            pl.colorbar(ima, ticks=np.linspace(z_min, z_max, 6), cax=axc)
-
-            fig_name = f'{figfolder}/AVE_spec_{to_plot}_{location}.png'
-            sc.savefig(fig_name, dpi=100)
+        fig_name = f'{figfolder}/AVE_spec_{to_plot}_{location}.png'
+        sc.savefig(fig_name, dpi=100)
 
 #%% Run as a script
 if __name__ == '__main__':
@@ -277,10 +276,51 @@ if __name__ == '__main__':
                                  debug=debug)
 
     if 'plot_test_calib' in to_run:
-        sensdfs = sc.autolist()
-        for location in locations:
-            sensdfs += pd.read_csv(f'results/{location}_{filestem}.csv')
-        sens_res = pd.concat(sensdfs)
         screen_scens = ['AVE', 'HPV+AVE']
-        plot_sweeps(sens_res, locations, screen_scens)
-        print('done')
+        for location in locations:
+            sensdf = pd.read_csv(f'results/{location}_{filestem}.csv')
+            plot_sweeps(sensdf, location, screen_scens)
+
+    if 'analyze_test_calib' in to_run:
+        # Options for sens/spec for AVE as primary
+        ave_primary_ss = [
+            [0.90, 0.83],
+            [0.82, 0.86],
+            [0.62, 0.86],
+        ]
+        # Options for sens/spec for AVE as triage
+        ave_triage_ss = [
+            [0.95, 0.55],
+            [0.90, 0.70],
+        ]
+        screen_scens = {
+            'AVE': ave_primary_ss,
+            'HPV+AVE': ave_triage_ss
+        }
+        test_pos_vals = pd.DataFrame()
+        locdf_list = sc.autolist()
+        for location in locations:
+            sensdf = pd.read_csv(f'results/{location}_{filestem}.csv')
+            scendf_list = sc.autolist()
+            for screen_scen, scen_vals in screen_scens.items():
+                if screen_scen == 'AVE':
+                    test_type = 'primary'
+                else:
+                    test_type = 'triage'
+                df = sensdf[sensdf.scen_label == screen_scen]
+                scenvaldf_list = sc.autolist()
+                for vals_to_fit in scen_vals:
+                    model_output = np.array([df[f'{test_type}_sens'], df[f'{test_type}_spec']]).transpose()
+                    mismatch = sc.autolist()
+                    for vals in model_output:
+                        gofs = hpv.compute_gof(vals_to_fit, vals)
+                        mismatch += gofs.sum()
+                    df['fit'] = mismatch
+                    scenvaldf_list += pd.DataFrame(df.sort_values('fit').reset_index().loc[0])
+                scenvaldf = pd.concat(scenvaldf_list)
+                scendf_list += scenvaldf
+            scendf = pd.concat(scendf_list)
+            locdf_list += scendf
+        test_pos_vals = pd.concat(locdf_list)
+
+    print('done')
