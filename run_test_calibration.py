@@ -99,6 +99,8 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
             elif 'triage' in screen_scen_pars.keys():
                 screen_scen_pars['triage'] = AVE
             screen_intvs = sp.get_screen_intvs(location=location, **screen_scen_pars)
+            if not screen_scen_pars.get('triage'):
+                screen_scen_pars['primary'] = 'ave'
             count += 1
             meta = sc.objdict()
             meta.count = count
@@ -137,7 +139,7 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
             sensdf['triage_sens'] = np.nan
             sensdf['triage_spec'] = np.nan
         sensdf['location'] = location
-        for var in ['primary', 'triage', 'sens', 'spec', 'ltfu']:
+        for var in ['primary', 'triage', 'precin', 'cin1', 'cin2', 'cin3', 'cancerous', 'ltfu']:
             if sim.meta.vals.get(var):
                 sensdf[var] = sim.meta.vals.get(var)
             else:
