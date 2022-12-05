@@ -297,7 +297,7 @@ if __name__ == '__main__':
             'AVE': ave_primary_ss,
             'HPV+AVE': ave_triage_ss
         }
-        test_pos_vals = pd.DataFrame()
+
         locdf_list = sc.autolist()
         for location in locations:
             sensdf = pd.read_csv(f'results/{location}_{filestem}.csv')
@@ -310,17 +310,26 @@ if __name__ == '__main__':
                 df = sensdf[sensdf.scen_label == screen_scen]
                 scenvaldf_list = sc.autolist()
                 for vals_to_fit in scen_vals:
-                    model_output = np.array([df[f'{test_type}_sens'], df[f'{test_type}_spec']]).transpose()
+                    df_to_compare = df.copy()
+                    model_output = np.array([df_to_compare[f'{test_type}_sens'], df_to_compare[f'{test_type}_spec']]).transpose()
                     mismatch = sc.autolist()
                     for vals in model_output:
                         gofs = hpv.compute_gof(vals_to_fit, vals)
                         mismatch += gofs.sum()
-                    df['fit'] = mismatch
-                    scenvaldf_list += pd.DataFrame(df.sort_values('fit').reset_index().loc[0])
+                    df_to_compare['fit'] = mismatch
+                    df_to_compare = df_to_compare.sort_values('fit').reset_index()
+                    df_to_compare = df_to_compare.drop(columns=['index'])
+                    df_to_compare = pd.DataFrame(df_to_compare[df_to_compare.index==0])
+                    df_to_compare['primary_sens_to_fit'] = vals_to_fit[0] if test_type == 'primary' else np.nan
+                    df_to_compare['primary_spec_to_fit'] = vals_to_fit[1] if test_type == 'primary' else np.nan
+                    df_to_compare['triage_sens_to_fit'] = vals_to_fit[0] if test_type == 'triage' else np.nan
+                    df_to_compare['triage_spec_to_fit'] = vals_to_fit[1] if test_type == 'triage' else np.nan
+                    scenvaldf_list += df_to_compare
                 scenvaldf = pd.concat(scenvaldf_list)
                 scendf_list += scenvaldf
             scendf = pd.concat(scendf_list)
             locdf_list += scendf
         test_pos_vals = pd.concat(locdf_list)
+        print('iamhere')
 
     print('done')
