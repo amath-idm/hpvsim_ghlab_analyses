@@ -23,8 +23,8 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    # 'run_test_calib',
-    'analyze_test_calib',
+    'run_test_calib',
+    # 'analyze_test_calib',
     # 'plot_test_calib',
 ]
 
@@ -40,7 +40,7 @@ figfolder = 'figures'
 datafolder = 'data'
 
 debug = 0
-n_draws = [1000, 5][debug]
+n_draws = [5000, 5][debug]
 
 #%% Functions
 
@@ -250,15 +250,11 @@ if __name__ == '__main__':
     if 'run_test_calib' in to_run:
         alldfs = sc.autolist()
         for location in locations:
-
-            sens_vals = np.linspace(0, 1, n_draws)
-            spec_vals = np.linspace(0, 1, n_draws)
-
-            precin_vals = np.random.uniform(0, .5, n_draws)
-            cin1_vals = np.random.uniform(0, .5, n_draws)
-            cin2_vals = np.random.uniform(0.2, .7, n_draws)
-            cin3_vals = np.random.uniform(0.3, 1, n_draws)
-            cancerous_vals = np.random.uniform(0.6, 1, n_draws)
+            precin_vals = np.random.uniform(0, .3, n_draws)
+            cin1_vals = np.random.uniform(0, .4, n_draws)
+            cin2_vals = np.random.uniform(0.4, 1, n_draws)
+            cin3_vals = np.random.uniform(0.5, 1, n_draws)
+            cancerous_vals = np.random.uniform(0.7, 1, n_draws)
             test_pos_vals ={
                 'precin': precin_vals,
                 'cin1': cin1_vals,
