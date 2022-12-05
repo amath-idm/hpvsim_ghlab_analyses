@@ -71,7 +71,7 @@ def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
 
 def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
                     screen_scens=None, # Input data
-                    debug=0, verbose=-1, end=2060# Sim settings
+                    debug=0, verbose=-1, end=2030# Sim settings
                     ):
     '''
     Run all screening/triage product scenarios for a given location
@@ -90,6 +90,9 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
     n_sims = len(screen_scens) * n_draws
 
     for i_sc, scen_label, screen_scen_pars in screen_scens.enumitems():
+        if end < 2060:
+            screen_scen_pars['end_year'] = end
+            screen_scen_pars['sim_end_year'] = end
         for i_d in range(n_draws):
             test_pos_val = dict()
             for key,val in test_pos_vals.items():

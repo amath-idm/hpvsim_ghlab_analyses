@@ -10,7 +10,7 @@ import pars_data as dp
 
 
 def get_screen_intvs(location, primary=None, triage=None, ltfu=None, sens=None, spec=None,
-                     start_year=2020, end_year=2040):
+                     start_year=2020, end_year=2040, sim_end_year=2060):
     ''' Make interventions for screening scenarios '''
 
     # Return empty list if nothing is defined
@@ -30,7 +30,7 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, sens=None, 
     screen_prob_final = 0.7
     treat_prob = 0.9
     screen_coverage = list(np.linspace(start=dp.screening_coverage[location], stop=screen_prob_final, num=len(screen_ramp)))
-    screen_coverage += [screen_prob_final] * (end_year - start_year + 1)
+    screen_coverage += [screen_prob_final] * (sim_end_year - end_year + 1)
 
     # Routine screening
     screen_eligible = lambda sim: np.isnan(sim.people.date_screened) | \

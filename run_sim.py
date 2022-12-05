@@ -73,8 +73,10 @@ def make_sim_parts(location=None, vaccination_coverage=None,
     interventions = sc.autolist()
 
     # Routine vaccination
-    routine_years   = vaccination_coverage[location]['routine']['years'][:81] ### ONLY USING 1980-2060, WHICH IS WHY THIS INDEX IS HERE
-    routine_values  = vaccination_coverage[location]['routine']['coverage'][:81]
+    # Find index of sim end date
+    ind = np.where(vaccination_coverage[location]['routine']['years']==(end+1))[0][0]
+    routine_years   = vaccination_coverage[location]['routine']['years'][:ind] ### ONLY USING 1980-2060, WHICH IS WHY THIS INDEX IS HERE
+    routine_values  = vaccination_coverage[location]['routine']['coverage'][:ind]
 
     routine_vx = hpv.routine_vx(
         prob=routine_values,
