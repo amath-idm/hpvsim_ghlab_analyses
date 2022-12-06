@@ -178,10 +178,18 @@ class test_characteristics_analyzer(hpv.Analyzer):
                     test_pos_disease_neg = np.setdiff1d(test_positives, test_pos_disease_pos)
                     test_neg_disease_neg = np.setdiff1d(test_negatives, test_neg_disease_pos)
 
-                    self.triage_df.loc['disease_positive'].test_positive += sim.people.scale_flows(test_pos_disease_pos)
-                    self.triage_df.loc['disease_negative'].test_positive += sim.people.scale_flows(test_pos_disease_neg)
-                    self.triage_df.loc['disease_positive'].test_negative += sim.people.scale_flows(test_neg_disease_pos)
-                    self.triage_df.loc['disease_negative'].test_negative += sim.people.scale_flows(test_neg_disease_neg)
+                    if len(test_pos_disease_pos):
+                        self.triage_df.loc['disease_positive'].test_positive += sim.people.scale_flows(
+                            test_pos_disease_pos)
+                    if len(test_pos_disease_neg):
+                        self.triage_df.loc['disease_negative'].test_positive += sim.people.scale_flows(
+                            test_pos_disease_neg)
+                    if len(test_neg_disease_pos):
+                        self.triage_df.loc['disease_positive'].test_negative += sim.people.scale_flows(
+                            test_neg_disease_pos)
+                    if len(test_neg_disease_neg):
+                        self.triage_df.loc['disease_negative'].test_negative += sim.people.scale_flows(
+                            test_neg_disease_neg)
 
         return
 
