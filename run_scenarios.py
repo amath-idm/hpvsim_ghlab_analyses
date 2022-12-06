@@ -133,8 +133,8 @@ def run_scens(location=None, screen_scens=None, # Input data
         df['total_cancers_low']        = msim.results['total_cancers'].low
         df['total_cancers_high']       = msim.results['total_cancers'].high
         df['total_cancer_incidence']   = msim.results['total_cancer_incidence'][:]
-        df['total_cancer_incidence_high']   = msim.results['total_cancer_incidence'][:].high
-        df['total_cancer_incidence_low']   = msim.results['total_cancer_incidence'][:].low
+        df['total_cancer_incidence_high']   = msim.results['total_cancer_incidence'].high
+        df['total_cancer_incidence_low']   = msim.results['total_cancer_incidence'].low
         df['asr_cancer']               = msim.results['asr_cancer'][:]
         df['asr_cancer_low']           = msim.results['asr_cancer'].low
         df['asr_cancer_high']          = msim.results['asr_cancer'].high
