@@ -40,7 +40,7 @@ figfolder = 'figures'
 datafolder = 'data'
 
 debug = 0
-n_draws = [5000, 5][debug]
+n_draws = [2000, 5][debug]
 
 #%% Functions
 
