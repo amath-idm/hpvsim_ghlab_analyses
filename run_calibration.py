@@ -31,12 +31,12 @@ locations = [
     'tanzania', # 2
 ]
 
-debug = True # Smaller runs
+debug = False # Smaller runs
 do_save = True
 
 
 # Run settings for calibration (dependent on debug)
-n_trials    = [2000, 2][debug]  # How many trials to run for calibration
+n_trials    = [5000, 2][debug]  # How many trials to run for calibration
 n_workers   = [60, 4][debug]    # How many cores to use
 storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
@@ -133,7 +133,5 @@ if __name__ == '__main__':
         for location in locations:
             calib = load_calib(location=location, save_pars=True, do_plot_additional=False)
 
-        # Compare calibration parameters across countries
-        ut.plot_calib_pars(locations=locations)
     
     T.toc('Done')

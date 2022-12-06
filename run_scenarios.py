@@ -22,15 +22,15 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    'run_scenarios',
-    # 'plot_scenarios',
+    # 'run_scenarios',
+    'plot_scenarios',
 ]
 
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    'nigeria',  # 1
-    'tanzania', # 2
+    # 'nigeria',  # 1
+    # 'tanzania', # 2
 ]
 
 # Options for sens/spec for AVE as primary - comment out any not to run
