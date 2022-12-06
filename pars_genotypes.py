@@ -5,8 +5,8 @@ List parameters used for genotypes in calibrations
 # Define key parameters -- values are [best, low, high]
 default_dur_precin = dict(par1=[1.5, 1, 3]) # Mean duration of HPV infection(years)
 default_prog_rate = [0.3, 0.05, 0.3] # Logistic growth curve parameter (assumption)
-default_dur_disp  = dict(par1=[4.5, 3, 15]) # Mean duration of dysplasia (years) for lognormal distribution
-default_cancer_prob = [0.025, 0.01, 0.1]
+default_dur_dysp  = dict(par1=[10, 7, 15]) # Mean duration of dysplasia (years) for lognormal distribution
+default_cancer_prob = [0.025, 0.01, 0.2]
 def get_genotype_pars(location):
     ''' Define genotype parameters '''
 
@@ -23,9 +23,9 @@ def get_genotype_pars(location):
                 tanzania = default_prog_rate,
             ),
             dur_dysp=dict(
-                india    = default_dur_disp,
-                nigeria  = default_dur_disp,
-                tanzania = default_dur_disp,
+                india    = default_dur_dysp,
+                nigeria  = default_dur_dysp,
+                tanzania = default_dur_dysp,
             ),
             cancer_prob=dict(
                 india    = default_cancer_prob,
@@ -45,9 +45,9 @@ def get_genotype_pars(location):
                 tanzania = default_prog_rate,
             ),
             dur_dysp=dict(
-                india    = default_dur_disp,
-                nigeria  = default_dur_disp,
-                tanzania = default_dur_disp,
+                india    = default_dur_dysp,
+                nigeria  = default_dur_dysp,
+                tanzania = default_dur_dysp,
             ),
             cancer_prob=dict(
                 india=default_cancer_prob,
@@ -67,9 +67,9 @@ def get_genotype_pars(location):
                 tanzania = default_prog_rate,
             ),
             dur_dysp=dict(
-                india    = dict(par1=[1.5, 1, 8]),
-                nigeria  = dict(par1=[4.5, 1, 8]),
-                tanzania = dict(par1=[1.5, 1, 8]),
+                india    = default_dur_dysp,
+                nigeria  = default_dur_dysp,
+                tanzania = default_dur_dysp,
             ),
             cancer_prob=dict(
                 india=default_cancer_prob,

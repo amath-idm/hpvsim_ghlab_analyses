@@ -103,7 +103,7 @@ def load_calib(location=None, do_plot=True, which_pars=0, save_pars=True, do_plo
         sc.fonts(add=sc.thisdir(aspath=True) / 'Libertinus Sans')
         sc.options(font='Libertinus Sans')
         fig = calib.plot(res_to_plot=50, plot_type='sns.boxplot', do_save=True,
-                         fig_path=f'{ut.figfolder}/{filename}png')
+                         fig_path=f'{ut.figfolder}/{filename}')
         fig.suptitle(f'Calibration results, {location.capitalize()}')
         fig.savefig(f'{ut.figfolder}/{filename}.png')
 
