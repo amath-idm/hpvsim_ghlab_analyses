@@ -174,7 +174,9 @@ class test_characteristics_analyzer(hpv.Analyzer):
                             test_neg_disease_pos = np.append(test_neg_disease_pos, test_neg_disease_pos_inds)
 
                     test_pos_disease_pos = list(set(test_pos_disease_pos))
+                    test_pos_disease_pos = [int(x) for x in test_pos_disease_pos]
                     test_neg_disease_pos = list(set(test_neg_disease_pos))
+                    test_neg_disease_pos = [int(x) for x in test_neg_disease_pos]
                     test_pos_disease_neg = np.setdiff1d(test_positives, test_pos_disease_pos)
                     test_neg_disease_neg = np.setdiff1d(test_negatives, test_neg_disease_pos)
 
