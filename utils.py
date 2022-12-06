@@ -68,7 +68,9 @@ def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem
 
     colors = sc.gridcolors(10)
 
-    for ir, (res, reslabel) in enumerate({'total_cancer_incidence': 'Cervical cancer incidence rate (per 100,000)', 'total_cancer_deaths': 'Annual deaths from cervical cancer'}.items()):
+    for ir, (res, reslabel) in enumerate({'total_cancer_incidence': 'Crude cervical cancer incidence rate (per 100,000)',
+                                          'total_cancer_deaths': 'Annual deaths from cervical cancer',
+                                          'asr_cancer': 'Age standardized cervical cancer incidence rate (per 100,000)',}.items()):
         fig, ax = pl.subplots(figsize=(16, 10))
         for cn, scen_label in enumerate(scens):
             df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()

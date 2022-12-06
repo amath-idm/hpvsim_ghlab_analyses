@@ -30,9 +30,9 @@ to_run = [
 
 # Comment out locations to not run
 locations = [
-    'india',    # 0
+    # 'india',    # 0
     'nigeria',  # 1
-    'tanzania', # 2
+    # 'tanzania', # 2
 ]
 
 resfolder = 'results'
@@ -251,11 +251,11 @@ if __name__ == '__main__':
     if 'run_test_calib' in to_run:
         alldfs = sc.autolist()
         for location in locations:
-            precin_vals = np.random.uniform(0, .2, n_draws)
+            precin_vals = np.random.uniform(0, .1, n_draws)
             cin1_vals = np.random.uniform(0, .3, n_draws)
             cin2_vals = np.random.uniform(0.5, 1, n_draws)
-            cin3_vals = np.random.uniform(0.6, 1, n_draws)
-            cancerous_vals = np.random.uniform(0.7, 1, n_draws)
+            cin3_vals = np.random.uniform(0.7, 1, n_draws)
+            cancerous_vals = np.random.uniform(0.8, 1, n_draws)
 
             test_pos_vals ={
                 'precin': precin_vals,

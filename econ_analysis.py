@@ -82,16 +82,10 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     ellipse.set_transform(transf + ax.transData)
     return ax.add_patch(ellipse)
 
-# Comment out to not run
-to_run = [
-    # 'run_scenarios',
-    'plot_scenarios',
-]
-
 locations = [
-    'india',
+    # 'india',
     'nigeria',
-    'tanzania'
+    # 'tanzania'
 ]
 
 location_dict = {
@@ -122,10 +116,12 @@ cost_params['VIA_sd'] = (2*1.96)*1.3/5.2
 
 cost_params['POC_HPV'] = np.array([2, 2, 2])
 cost_params['POC_HPV_sd'] = (2*1.96)*2/2
-cost_params['AVE'] = np.array([5.2, 5, 2.89])
+cost_params['AVE'] = np.array([5.2, 13, 2.89])
 cost_params['AVE_sd'] = (2*1.96)*1.3/5.2
-cost_params['CIN'] = np.array([60, 3.5, 3.57])
-cost_params['CIN_sd'] = (2*1.96)*4.2/16
+cost_params['TA'] = np.array([60, 3.5, 3.57])
+cost_params['TA_sd'] = (2*1.96)*4.2/16
+cost_params['LEEP'] = np.array([90.3, 107, 69])
+cost_params['LEEP_sd'] = (2*1.96)*23/90
 cost_params['cancer'] = np.array([450, np.mean(np.array([44.73, 64.13, 281.5, 768, 212])), np.mean(np.array([94, 574, 974, 21]))])
 cost_params['cancer_sd'] = (2*1.96)*(33+75+159+104+12+90.3+8.6+5+4.8+241)/450
 
@@ -176,9 +172,12 @@ for location in locations:
     simulated_costs['AVE'] = truncnorm.rvs((lower_clip - costs['AVE']) / costs['AVE_sd'],
                                            (upper_clip - costs['AVE']) / costs['AVE_sd'],
                                            loc=costs['AVE'], scale=costs['AVE_sd'], size=n_seeds)
-    simulated_costs['CIN'] = truncnorm.rvs((lower_clip - costs['CIN']) / costs['CIN_sd'],
-                                           (upper_clip - costs['CIN']) / costs['CIN_sd'],
-                                           loc=costs['CIN'], scale=costs['CIN_sd'], size=n_seeds)
+    simulated_costs['TA'] = truncnorm.rvs((lower_clip - costs['TA']) / costs['TA_sd'],
+                                           (upper_clip - costs['TA']) / costs['TA_sd'],
+                                           loc=costs['TA'], scale=costs['TA_sd'], size=n_seeds)
+    simulated_costs['LEEP'] = truncnorm.rvs((lower_clip - costs['LEEP']) / costs['LEEP_sd'],
+                                           (upper_clip - costs['LEEP']) / costs['LEEP_sd'],
+                                           loc=costs['LEEP'], scale=costs['LEEP_sd'], size=n_seeds)
     simulated_costs['cancer'] = truncnorm.rvs((lower_clip - costs['cancer']) / costs['cancer_sd'],
                                               (upper_clip - costs['cancer']) / costs['cancer_sd'],
                                               loc=costs['cancer'], scale=costs['cancer_sd'], size=n_seeds)
@@ -206,7 +205,7 @@ for location in locations:
             avg_age_ca_death = np.mean(group['av_age_cancer_deaths'])
             avg_age_ca = np.mean(group['av_age_cancers'])
             ca_years = avg_age_ca_death - avg_age_ca
-            yld = np.sum(np.mean([0.54, 0.049, 0.451, 0.288]) * ca_years * discounted_cancers)
+            yld = np.sum(np.sum([0.54*.1, 0.049*.5, 0.451*.3, 0.288*.1]) * ca_years * discounted_cancers)
             ylds += [yld]
             ind = sc.findnearest(life_expectancy['AgeGrpStart'], avg_age_ca_death)
             yll = np.sum(life_expectancy['ex'][ind] * discounted_cancer_deaths)
@@ -217,7 +216,8 @@ for location in locations:
                             (group['new_via_screens'].values * costs['VIA'].values[name]) + \
                             (group['new_poc_hpv_screens'].values * costs['POC_HPV'].values[name]) + \
                             (group['new_ave_screens'].values * costs['AVE'].values[name]) + \
-                            ((group['new_thermal_ablations'].values + group['new_leeps'].values) * costs['CIN'].values[name]) + \
+                            (group['new_thermal_ablations'].values * costs['TA'].values[name]) + \
+                            (group['new_leeps'].values * costs['LEEP'].values[name]) + \
                             (group['new_cancer_treatments'].values * costs['cancer'].values[name])
             discounted_cost = np.sum([i/1.03**t for t,i in enumerate(total_cost)])
             total_costs += [discounted_cost]
