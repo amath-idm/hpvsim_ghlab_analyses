@@ -31,8 +31,8 @@ to_run = [
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    # 'nigeria',  # 1
-    # 'tanzania', # 2
+    'nigeria',  # 1
+    'tanzania', # 2
 ]
 
 resfolder = 'results'
@@ -135,10 +135,8 @@ def run_screen_test(location=None, n_draws=1, test_pos_vals=None, # Input data
         sensdf['primary_spec'] = [sensdf_primary.loc['disease_negative'].test_negative / np.sum(sensdf_primary.loc['disease_negative'])]
 
         if sensdf_triage is not None:
-            sensdf['triage_sens'] = [
-                sensdf_triage.loc['disease_positive'].test_positive / np.sum(sensdf_triage.loc['disease_positive'])]
-            sensdf['triage_spec'] = [
-                sensdf_triage.loc['disease_negative'].test_negative / np.sum(sensdf_triage.loc['disease_negative'])]
+            sensdf['triage_sens'] = [sensdf_triage.loc['disease_positive'].test_positive / np.sum(sensdf_triage.loc['disease_positive'])]
+            sensdf['triage_spec'] = [sensdf_triage.loc['disease_negative'].test_negative / np.sum(sensdf_triage.loc['disease_negative'])]
         else:
             sensdf['triage_sens'] = np.nan
             sensdf['triage_spec'] = np.nan
@@ -253,11 +251,12 @@ if __name__ == '__main__':
     if 'run_test_calib' in to_run:
         alldfs = sc.autolist()
         for location in locations:
-            precin_vals = np.random.uniform(0, .3, n_draws)
-            cin1_vals = np.random.uniform(0, .4, n_draws)
-            cin2_vals = np.random.uniform(0.4, 1, n_draws)
-            cin3_vals = np.random.uniform(0.5, 1, n_draws)
+            precin_vals = np.random.uniform(0, .2, n_draws)
+            cin1_vals = np.random.uniform(0, .3, n_draws)
+            cin2_vals = np.random.uniform(0.5, 1, n_draws)
+            cin3_vals = np.random.uniform(0.6, 1, n_draws)
             cancerous_vals = np.random.uniform(0.7, 1, n_draws)
+
             test_pos_vals ={
                 'precin': precin_vals,
                 'cin1': cin1_vals,
@@ -268,7 +267,7 @@ if __name__ == '__main__':
 
             screen_scens = sc.objdict({
                 'AVE': dict(primary='ave'),
-                'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
+                # 'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
             })
             df = run_screen_test(screen_scens=screen_scens, n_draws=n_draws,
                                  test_pos_vals=test_pos_vals, location=location,
