@@ -12,7 +12,8 @@ import pandas as pd
 from scipy.stats import truncnorm
 import sciris as sc
 import pylab as pl
-import seaborn as sns
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
 
 resfolder = 'results'
 figfolder = 'figures'
@@ -28,6 +29,58 @@ def set_font(size=None, font='Libertinus Sans'):
     sc.fonts(add=sc.thisdir(aspath=True) / 'assets' / 'LibertinusSans-Regular.otf')
     sc.options(font=font, fontsize=size)
     return
+
+def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
+    """
+    Create a plot of the covariance confidence ellipse of *x* and *y*.
+
+    Parameters
+    ----------
+    x, y : array-like, shape (n, )
+        Input data.
+
+    ax : matplotlib.axes.Axes
+        The axes object to draw the ellipse into.
+
+    n_std : float
+        The number of standard deviations to determine the ellipse's radiuses.
+
+    **kwargs
+        Forwarded to `~matplotlib.patches.Ellipse`
+
+    Returns
+    -------
+    matplotlib.patches.Ellipse
+    """
+    if x.size != y.size:
+        raise ValueError("x and y must be the same size")
+
+    cov = np.cov(x, y)
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    # Using a special case to obtain the eigenvalues of this
+    # two-dimensional dataset.
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      facecolor=facecolor, **kwargs)
+
+    # Calculating the standard deviation of x from
+    # the squareroot of the variance and multiplying
+    # with the given number of standard deviations.
+    scale_x = np.sqrt(cov[0, 0]) * n_std
+    mean_x = np.mean(x)
+
+    # calculating the standard deviation of y ...
+    scale_y = np.sqrt(cov[1, 1]) * n_std
+    mean_y = np.mean(y)
+
+    transf = transforms.Affine2D() \
+        .rotate_deg(45) \
+        .scale(scale_x, scale_y) \
+        .translate(mean_x, mean_y)
+
+    ellipse.set_transform(transf + ax.transData)
+    return ax.add_patch(ellipse)
 
 # Comment out to not run
 to_run = [
@@ -71,7 +124,6 @@ cost_params['POC_HPV'] = np.array([2, 2, 2])
 cost_params['POC_HPV_sd'] = (2*1.96)*2/2
 cost_params['AVE'] = np.array([5.2, 5, 2.89])
 cost_params['AVE_sd'] = (2*1.96)*1.3/5.2
-
 cost_params['CIN'] = np.array([60, 3.5, 3.57])
 cost_params['CIN_sd'] = (2*1.96)*4.2/16
 cost_params['cancer'] = np.array([450, np.mean(np.array([44.73, 64.13, 281.5, 768, 212])), np.mean(np.array([94, 574, 974, 21]))])
@@ -87,7 +139,7 @@ cost_params['cancer_sd'] = (2*1.96)*(33+75+159+104+12+90.3+8.6+5+4.8+241)/450
 # India costs: mean (SD) (ref 3)
 # HPV DNA testing: US$ 14.8 ($3.8 SD).
 # VIA: $5.2 ($1.3).
-# Thermal ablation: $60.4 ($15)
+# Cryotherapy: $60.4 ($15)
 # LEEP: $90.3 ($23).
 # CaTx: $291 - 617
 
@@ -218,20 +270,27 @@ for location in locations:
 
     for i, scen in enumerate(scenarios):
         group = data_to_plot[data_to_plot['scen_label'] == scen]
+        if scen != 'No screening':
+            ellipse_group = alldfs[(alldfs.location == location) & (alldfs.scen_label == scen)]
+            x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_costs'].values
+            confidence_ellipse(x, y, ax=ax1, edgecolor=colors[scen_colors[scen]])
+            confidence_ellipse(x, y, ax=ax2, edgecolor=colors[scen_colors[scen]])
+            confidence_ellipse(x, y, ax=ax3, edgecolor=colors[scen_colors[scen]])
+            confidence_ellipse(x, y, ax=ax4, edgecolor=colors[scen_colors[scen]])
         group.plot(ax=ax1, kind='scatter', x='DALYs_averted', y='total_costs', color=colors[scen_colors[scen]], marker=markers[i], s=200)
         group.plot(ax=ax2, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, marker=markers[i], color=colors[scen_colors[scen]], s=200)
         group.plot(ax=ax3, kind='scatter', x='DALYs_averted', y='total_costs', marker=markers[i], color=colors[scen_colors[scen]], s=200)
         group.plot(ax=ax4, kind='scatter', x='DALYs_averted', y='total_costs', marker=markers[i], color=colors[scen_colors[scen]], s=200)
 
-    ax1.set_ylim(ymin*0.9, ymax*1.1)
-    ax2.set_ylim(ymin*0.9, ymax*1.1)
+    ax1.set_ylim(ymin*0.6, ymax*1.15)
+    ax2.set_ylim(ymin*0.6, ymax*1.15)
     ax3.set_ylim(-0.5,1)
     ax4.set_ylim(-0.5,1)
 
     ax1.set_xlim(-0.5,1)
-    ax2.set_xlim(xmin*0.9,xmax*1.1)
+    ax2.set_xlim(xmin*0.8,xmax*1.1)
     ax3.set_xlim(-0.5,1)
-    ax4.set_xlim(xmin*0.9, xmax*1.1)
+    ax4.set_xlim(xmin*0.8, xmax*1.1)
 
     # hide the spines between ax and ax2
     ax1.spines['bottom'].set_visible(False)

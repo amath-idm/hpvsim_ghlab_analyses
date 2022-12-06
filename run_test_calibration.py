@@ -31,8 +31,8 @@ to_run = [
 # Comment out locations to not run
 locations = [
     'india',    # 0
-    'nigeria',  # 1
-    'tanzania', # 2
+    # 'nigeria',  # 1
+    # 'tanzania', # 2
 ]
 
 resfolder = 'results'
@@ -297,7 +297,6 @@ if __name__ == '__main__':
             'HPV+AVE': ave_triage_ss
         }
 
-        locdf_list = sc.autolist()
         for location in locations:
             sensdf = pd.read_csv(f'results/{location}_{filestem}.csv')
             scendf_list = sc.autolist()
@@ -327,8 +326,6 @@ if __name__ == '__main__':
                 scenvaldf = pd.concat(scenvaldf_list)
                 scendf_list += scenvaldf
             scendf = pd.concat(scendf_list)
-            locdf_list += scendf
-        test_pos_vals = pd.concat(locdf_list)
-        print('iamhere')
+            scendf.to_csv(f'{ut.resfolder}/{location}_sens_calibration_results.csv')
 
     print('done')
