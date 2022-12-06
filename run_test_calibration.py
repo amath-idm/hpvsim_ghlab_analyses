@@ -40,7 +40,7 @@ figfolder = 'figures'
 datafolder = 'data'
 
 debug = 0
-n_draws = [2000, 5][debug]
+n_draws = [1000, 5][debug]
 
 #%% Functions
 
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
             screen_scens = sc.objdict({
                 'AVE': dict(primary='ave'),
-                # 'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
+                'HPV+AVE': dict(primary='hpv', triage='ave', ltfu=0.3)
             })
             df = run_screen_test(screen_scens=screen_scens, n_draws=n_draws,
                                  test_pos_vals=test_pos_vals, location=location,
