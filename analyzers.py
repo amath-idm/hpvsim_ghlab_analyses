@@ -133,15 +133,17 @@ class test_characteristics_analyzer(hpv.Analyzer):
                 test_pos_disease_pos = []
                 test_neg_disease_pos = []
                 for disease_pos_state in disease_pos_states:
-                    test_pos_disease_pos_inds = sim.people[disease_pos_state][:,test_positives].sum(axis=0).nonzero()[0]
+                    test_pos_disease_pos_inds = test_positives[sim.people[disease_pos_state][:,test_positives].sum(axis=0).nonzero()[0]]
                     if len(test_pos_disease_pos_inds):
                         test_pos_disease_pos = np.append(test_pos_disease_pos, test_pos_disease_pos_inds)
-                    test_neg_disease_pos_inds = sim.people[disease_pos_state][:,test_negatives].sum(axis=0).nonzero()[0]
+                    test_neg_disease_pos_inds = test_negatives[sim.people[disease_pos_state][:,test_negatives].sum(axis=0).nonzero()[0]]
                     if len(test_neg_disease_pos_inds):
                         test_neg_disease_pos = np.append(test_neg_disease_pos, test_neg_disease_pos_inds)
 
                 test_pos_disease_pos = list(set(test_pos_disease_pos))
+                test_pos_disease_pos = [int(x) for x in test_pos_disease_pos]
                 test_neg_disease_pos = list(set(test_neg_disease_pos))
+                test_neg_disease_pos = [int(x) for x in test_neg_disease_pos]
                 test_pos_disease_neg = np.setdiff1d(test_positives, test_pos_disease_pos)
                 test_neg_disease_neg = np.setdiff1d(test_negatives, test_neg_disease_pos)
 
@@ -162,10 +164,12 @@ class test_characteristics_analyzer(hpv.Analyzer):
                     test_pos_disease_pos = []
                     test_neg_disease_pos = []
                     for disease_pos_state in disease_pos_states:
-                        test_pos_disease_pos_inds = sim.people[disease_pos_state][:, test_positives].sum(axis=0).nonzero()[0]
+                        test_pos_disease_pos_inds = test_positives[
+                            sim.people[disease_pos_state][:, test_positives].sum(axis=0).nonzero()[0]]
                         if len(test_pos_disease_pos_inds):
                             test_pos_disease_pos = np.append(test_pos_disease_pos, test_pos_disease_pos_inds)
-                        test_neg_disease_pos_inds = sim.people[disease_pos_state][:, test_negatives].sum(axis=0).nonzero()[0]
+                        test_neg_disease_pos_inds = test_negatives[
+                            sim.people[disease_pos_state][:, test_negatives].sum(axis=0).nonzero()[0]]
                         if len(test_neg_disease_pos_inds):
                             test_neg_disease_pos = np.append(test_neg_disease_pos, test_neg_disease_pos_inds)
 
@@ -174,10 +178,10 @@ class test_characteristics_analyzer(hpv.Analyzer):
                     test_pos_disease_neg = np.setdiff1d(test_positives, test_pos_disease_pos)
                     test_neg_disease_neg = np.setdiff1d(test_negatives, test_neg_disease_pos)
 
-                    self.triage_df.loc['disease_positive'].test_positive += len(test_pos_disease_pos)
-                    self.triage_df.loc['disease_negative'].test_positive += len(test_pos_disease_neg)
-                    self.triage_df.loc['disease_positive'].test_negative += len(test_neg_disease_pos)
-                    self.triage_df.loc['disease_negative'].test_negative += len(test_neg_disease_neg)
+                    self.triage_df.loc['disease_positive'].test_positive += sim.people.scale_flows(test_pos_disease_pos)
+                    self.triage_df.loc['disease_negative'].test_positive += sim.people.scale_flows(test_pos_disease_neg)
+                    self.triage_df.loc['disease_positive'].test_negative += sim.people.scale_flows(test_neg_disease_pos)
+                    self.triage_df.loc['disease_negative'].test_negative += sim.people.scale_flows(test_neg_disease_neg)
 
         return
 
