@@ -22,14 +22,14 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    # 'run_scenarios',
-    'plot_scenarios',
+    'run_scenarios',
+    # 'plot_scenarios',
 ]
 
 # Comment out locations to not run
 locations = [
-    'india',    # 0
-    # 'nigeria',  # 1
+    # 'india',    # 0
+    'nigeria',  # 1
     # 'tanzania', # 2
 ]
 
@@ -211,7 +211,7 @@ if __name__ == '__main__':
 
     # Plot results of scenarios
     if 'plot_scenarios' in to_run:
-        for location in ['india', 'nigeria', 'tanzania']:
+        for location in locations:
             # First plot: comparing AVE as a primary screen to existing primary screen options
             ut.plot_residual_burden(
                 filestem='screening_results',

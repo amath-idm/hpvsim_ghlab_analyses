@@ -3,7 +3,7 @@ List parameters used for genotypes in calibrations
 '''
 
 # Define key parameters -- values are [best, low, high]
-default_dur_precin = dict(par1=[1.5, 1, 3]) # Mean duration of HPV infection(years)
+default_dur_precin = dict(par1=[1.5, 1, 3]) # Mean duration of HPV infection (years)
 default_prog_rate = [0.3, 0.05, 0.3] # Logistic growth curve parameter (assumption)
 default_dur_dysp  = dict(par1=[10, 7, 15]) # Mean duration of dysplasia (years) for lognormal distribution
 default_cancer_prob = [0.025, 0.01, 0.2]
