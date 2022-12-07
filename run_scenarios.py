@@ -192,8 +192,8 @@ if __name__ == '__main__':
             # AVE as triage         : HPV+AVE, POCHPV+AVE (2x 2 sens/spec combos)
             screen_scens = sc.objdict({
                 'No screening': dict(),
-                'HPV': dict(primary='hpv'),
-                'VIA': dict(primary='via')
+                'HPV, 93%/70%': dict(primary='hpv'),
+                'VIA, 30%/75%': dict(primary='via')
             })
             test_calibration = pd.read_csv(f'results/{location}_sens_calibration_results.csv')
             for sens, spec in ave_primary_ss:
@@ -220,7 +220,7 @@ if __name__ == '__main__':
                 for poc,ltfu in poc_ltfus.items():
                     screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = sc.mergedicts({'primary':'hpv', 'triage':'ave', 'ltfu':ltfu}, test_pos_vals)
             for poc, ltfu in poc_ltfus.items():
-                screen_scens[f'{poc}+VIA'] = dict(primary='hpv', triage='via', ltfu=ltfu)
+                screen_scens[f'{poc}+VIA, 25%/56%'] = dict(primary='hpv', triage='via', ltfu=ltfu)
             alldf, msims = run_scens(screen_scens=screen_scens, n_seeds=n_seeds, location=location, debug=debug)
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)
@@ -235,7 +235,7 @@ if __name__ == '__main__':
             ut.plot_residual_burden(
                 filestem='screening_results',
                 locations=[location],
-                scens=['No screening', 'HPV', 'VIA', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
+                scens=['No screening', 'HPV, 93%/70%', 'VIA, 30%/75%', 'AVE, 90%/83%', 'AVE, 82%/86%', 'AVE, 62%/86%'],
                 fig_filestem=f'ave_primary_{location}'
             )
 
@@ -243,7 +243,7 @@ if __name__ == '__main__':
             ut.plot_residual_burden(
                 filestem='screening_results',
                 locations=[location],
-                scens=['No screening', 'HPV+VIA', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
+                scens=['No screening', 'HPV+VIA, 25%/56%', 'HPV+AVE, 95%/55%', 'HPV+AVE, 90%/70%'],
                 fig_filestem=f'ave_triage_{location}'
             )
 

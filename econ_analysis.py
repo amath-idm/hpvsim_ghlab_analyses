@@ -237,59 +237,59 @@ for location in locations:
 
 alldfs = pd.concat(dfs)
 
-## Now generate a range of costs for AVEs
-AVE_scenarios = [x for x in scenarios if 'AVE' in x]
-AVE_cost_range = np.linspace(2,15, 10)
-dfs = sc.autolist()
-location = 'nigeria'
-for cost in AVE_cost_range:
-    costs = simulated_cost_df[simulated_cost_df['location'] == location]
-    life_expectancy = life_expectancies[location].reset_index()
-    for scenario in AVE_scenarios:
-        df = pd.DataFrame()
-        model_output = model_res[(model_res['location'] == location) & (model_res['scen_label'] == scenario)]
-        ylls = []
-        ylds = []
-        dalys = []
-        total_costs = []
-        total_cin_treatments = []
-        for name, group in model_output.groupby('seed'):
-            discounted_cancers = np.array([i/1.03**t for t,i in enumerate(group['new_cancers'].values)])
-            discounted_cancer_deaths = np.array([i/1.03**t for t,i in enumerate(group['new_cancer_deaths'].values)])
-            avg_age_ca_death = np.mean(group['av_age_cancer_deaths'])
-            avg_age_ca = np.mean(group['av_age_cancers'])
-            ca_years = avg_age_ca_death - avg_age_ca
-            yld = np.sum(np.sum([0.54*.1, 0.049*.5, 0.451*.3, 0.288*.1]) * ca_years * discounted_cancers)
-            ylds += [yld]
-            ind = sc.findnearest(life_expectancy['AgeGrpStart'], avg_age_ca_death)
-            yll = np.sum(life_expectancy['ex'][ind] * discounted_cancer_deaths)
-            ylls += [yll]
-            daly = yll + yld
-            dalys += [daly]
-            total_cost = (group['new_hpv_screens'].values * costs['HPV'].values[name]) + \
-                            (group['new_via_screens'].values * costs['VIA'].values[name]) + \
-                            (group['new_poc_hpv_screens'].values * costs['POC_HPV'].values[name]) + \
-                            (group['new_ave_screens'].values * cost) + \
-                            (group['new_thermal_ablations'].values * costs['TA'].values[name]) + \
-                            (group['new_leeps'].values * costs['LEEP'].values[name]) + \
-                            (group['new_cancer_treatments'].values * costs['cancer'].values[name])
-            discounted_cost = np.sum([i/1.03**t for t,i in enumerate(total_cost)])
-            total_costs += [discounted_cost]
-            total_cin_treatments += [np.sum(group['new_thermal_ablations'].values + group['new_leeps'].values)]
-
-        df['ylls'] = ylls
-        df['ylds'] = ylds
-        df['DALYs'] = dalys
-        df['total_cin_treatments'] = total_cin_treatments
-        if scenario == 'No screening':
-            base_DALYs = dalys
-        df['DALYs_averted'] = base_DALYs - df['DALYs']
-        df['total_costs'] = total_costs
-        df['location'] = location
-        df['scen_label'] = scenario
-        dfs += df
-
-alldfs_ave_cost = pd.concat(dfs)
+# ## Now generate a range of costs for AVEs
+# AVE_scenarios = [x for x in scenarios if 'AVE' in x]
+# AVE_cost_range = np.linspace(2,15, 10)
+# dfs = sc.autolist()
+# location = 'nigeria'
+# for cost in AVE_cost_range:
+#     costs = simulated_cost_df[simulated_cost_df['location'] == location]
+#     life_expectancy = life_expectancies[location].reset_index()
+#     for scenario in AVE_scenarios:
+#         df = pd.DataFrame()
+#         model_output = model_res[(model_res['location'] == location) & (model_res['scen_label'] == scenario)]
+#         ylls = []
+#         ylds = []
+#         dalys = []
+#         total_costs = []
+#         total_cin_treatments = []
+#         for name, group in model_output.groupby('seed'):
+#             discounted_cancers = np.array([i/1.03**t for t,i in enumerate(group['new_cancers'].values)])
+#             discounted_cancer_deaths = np.array([i/1.03**t for t,i in enumerate(group['new_cancer_deaths'].values)])
+#             avg_age_ca_death = np.mean(group['av_age_cancer_deaths'])
+#             avg_age_ca = np.mean(group['av_age_cancers'])
+#             ca_years = avg_age_ca_death - avg_age_ca
+#             yld = np.sum(np.sum([0.54*.1, 0.049*.5, 0.451*.3, 0.288*.1]) * ca_years * discounted_cancers)
+#             ylds += [yld]
+#             ind = sc.findnearest(life_expectancy['AgeGrpStart'], avg_age_ca_death)
+#             yll = np.sum(life_expectancy['ex'][ind] * discounted_cancer_deaths)
+#             ylls += [yll]
+#             daly = yll + yld
+#             dalys += [daly]
+#             total_cost = (group['new_hpv_screens'].values * costs['HPV'].values[name]) + \
+#                             (group['new_via_screens'].values * costs['VIA'].values[name]) + \
+#                             (group['new_poc_hpv_screens'].values * costs['POC_HPV'].values[name]) + \
+#                             (group['new_ave_screens'].values * cost) + \
+#                             (group['new_thermal_ablations'].values * costs['TA'].values[name]) + \
+#                             (group['new_leeps'].values * costs['LEEP'].values[name]) + \
+#                             (group['new_cancer_treatments'].values * costs['cancer'].values[name])
+#             discounted_cost = np.sum([i/1.03**t for t,i in enumerate(total_cost)])
+#             total_costs += [discounted_cost]
+#             total_cin_treatments += [np.sum(group['new_thermal_ablations'].values + group['new_leeps'].values)]
+#
+#         df['ylls'] = ylls
+#         df['ylds'] = ylds
+#         df['DALYs'] = dalys
+#         df['total_cin_treatments'] = total_cin_treatments
+#         if scenario == 'No screening':
+#             base_DALYs = dalys
+#         df['DALYs_averted'] = base_DALYs - df['DALYs']
+#         df['total_costs'] = total_costs
+#         df['location'] = location
+#         df['scen_label'] = scenario
+#         dfs += df
+#
+# alldfs_ave_cost = pd.concat(dfs)
 
 set_font(size=20)
 markers = ['.', 'v', '<', '1', 's', 'p', 'P', '*', '+', 'D', '^', 'x']
@@ -313,7 +313,6 @@ scenarios_to_plot = scenarios[1:]
 
 for location in locations:
     data_to_plot = grouped_means[grouped_means['location'] == location]
-    ave_cost_data_to_plot = alldfs_ave_cost[alldfs_ave_cost['location']==location]
     # ymin = np.min(data_to_plot[data_to_plot['scen_label'] != 'No screening']['total_costs'])
     # ymax = np.max(data_to_plot[data_to_plot['scen_label'] != 'No screening']['total_costs'])
     #
@@ -462,12 +461,6 @@ for location in locations:
 
     for i, scen in enumerate(scenarios_to_plot):
         group = data_to_plot[data_to_plot['scen_label'] == scen]
-        if scen in AVE_scenarios:
-            group_sens = ave_cost_data_to_plot[ave_cost_data_to_plot['scen_label']==scen]
-            ymax = group_sens['total_costs'].max()
-            ymin = group_sens['total_costs'].min()
-            xval = group['DALYs_averted'].values
-            pl.vlines(x=xval, ymin=ymin, ymax=ymax, color=colors[scen_colors[scen]])
         if scen != 'No screening':
             ellipse_group = alldfs[(alldfs.location == location) & (alldfs.scen_label == scen)]
             x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_costs'].values
