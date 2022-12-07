@@ -257,7 +257,6 @@ scenarios_to_plot = scenarios[1:]
 for location in locations:
     data_to_plot = grouped_means[grouped_means['location'] == location]
 
-
     # ymin = np.min(data_to_plot[data_to_plot['scen_label'] != 'No screening']['total_costs'])
     # ymax = np.max(data_to_plot[data_to_plot['scen_label'] != 'No screening']['total_costs'])
     #

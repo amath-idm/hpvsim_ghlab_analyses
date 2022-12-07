@@ -34,7 +34,7 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, precin=None
 
     # Routine screening
     screen_eligible = lambda sim: np.isnan(sim.people.date_screened) | \
-                                  (sim.t > (sim.people.date_screened + 10 / sim['dt']))
+                                  (sim.t > (sim.people.date_screened + 5 / sim['dt']))
     screening = hpv.routine_screening(
         product=primary,
         prob=screen_coverage,
