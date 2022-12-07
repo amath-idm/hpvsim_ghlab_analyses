@@ -9,8 +9,8 @@ import hpvsim as hpv
 import pars_data as dp
 
 
-def get_screen_intvs(location, primary=None, triage=None, ltfu=None, sens=None, spec=None,
-                     start_year=2020, end_year=2040, sim_end_year=2060):
+def get_screen_intvs(location, primary=None, triage=None, ltfu=None, precin=None, cin1=None, cin2=None, cin3=None,
+                     cancerous=None, start_year=2020, end_year=2040, sim_end_year=2060):
     ''' Make interventions for screening scenarios '''
 
     # Return empty list if nothing is defined
@@ -18,10 +18,10 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, sens=None, 
 
     # Create AVE products
     if primary=='ave' or triage=='ave':
-        if sens is None or spec is None:
-            raise ValueError('Must provide sensitivity and specificity if using AVE test.')
+        if precin is None or cin1 is None or cin2 is None or cin3 is None or cancerous is None:
+            raise ValueError('Must provide test positivity values if using AVE test.')
         else:
-            ave, eff_vals = make_AVE(sens, spec)
+            ave = make_AVE(precin, cin1, cin2, cin3, cancerous)
         if primary == 'ave': primary = ave
         else: triage=ave
 
@@ -112,30 +112,26 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, sens=None, 
     return st_intvs
 
 
-def make_AVE(sens=None, spec=None):
-    ''' Get AVE parameters '''
+def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
+    '''
+    Make AVE product using P(T+| health state) for health states HPV, CIN1, CIN2, CIN3, and cancer
+    '''
 
     basedf = pd.read_csv('dx_pars.csv')
-    lo_grade = ['precin', 'latent', 'cin1']  # No lesions or low grade lesions (a specificity test will count these as negative)
-    hi_grade = ['cin2', 'cin3', 'cancerous']  # High grade lesions (a sensitive test will count these as positive)
+    not_changing_states = ['susceptible', 'latent']
+    not_changing = basedf.loc[basedf.state.isin(not_changing_states)].copy()
 
-    # Randomly perturb the test positivity values (lower-bounded by characteristics of VIA)
-    if sens is None: sens = np.random.uniform(0.4, 1)
-    if spec is None: spec = np.random.uniform(0.7, 1)
-
-    ave_spec = basedf.loc[(basedf.state.isin(lo_grade)) & (basedf.result == 'negative')].copy()
-    ave_sens = basedf.loc[(basedf.state.isin(hi_grade)) & (basedf.result == 'positive')].copy()
-    ave_fpr = basedf.loc[(basedf.state.isin(lo_grade)) & (basedf.result == 'positive')].copy()
-    ave_fnr = basedf.loc[(basedf.state.isin(hi_grade)) & (basedf.result == 'negative')].copy()
-    ave_spec.probability = spec
-    ave_sens.probability = sens
-    ave_fpr.probability = 1-spec
-    ave_fnr.probability = 1-sens
+    new_states = sc.autolist()
+    for state, posval in zip(['precin', 'cin1', 'cin2', 'cin3', 'cancerous'],
+                             [precin, cin1, cin2, cin3, cancerous]):
+        new_pos_vals = basedf.loc[(basedf.state == state) & (basedf.result == 'positive')].copy()
+        new_pos_vals.probability = posval
+        new_neg_vals = basedf.loc[(basedf.state == state) & (basedf.result == 'negative')].copy()
+        new_neg_vals.probability = 1-posval
+        new_states += new_pos_vals
+        new_states += new_neg_vals
+    new_states_df = pd.concat(new_states)
 
     # Make the ave product
-    ave = hpv.dx(pd.concat([ave_spec, ave_fpr, ave_sens, ave_fnr]), hierarchy=['positive', 'negative'])
-    eff_vals = sc.objdict(
-        sens=sens,
-        spec=spec
-    )
-    return ave, eff_vals
+    ave = hpv.dx(pd.concat([not_changing, new_states_df]), hierarchy=['positive', 'negative'])
+    return ave

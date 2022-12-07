@@ -40,7 +40,7 @@ ave_primary_ss = [
     [0.62,0.86],
 ]
 
-# Options for sens/spec for AVE as triag - comment out any not to run
+# Options for sens/spec for AVE as triage - comment out any not to run
 ave_triage_ss = [
     [0.95,0.55],
     [0.90,0.70],
@@ -98,7 +98,7 @@ def run_scens(location=None, screen_scens=None, # Input data
         econdf = sim.get_analyzer(an.econ_analyzer).df
         econdf['location'] = location
         econdf['seed'] = i_s
-        for var in ['primary', 'triage', 'sens', 'spec', 'ltfu']:
+        for var in ['primary', 'triage', 'precin', 'cin1', 'cin2', 'cin3', 'cancerous', 'ltfu']:
             if sim.meta.vals.get(var):
                 econdf[var] = sim.meta.vals.get(var)
             else:
@@ -195,11 +195,30 @@ if __name__ == '__main__':
                 'HPV': dict(primary='hpv'),
                 'VIA': dict(primary='via')
             })
+            test_calibration = pd.read_csv(f'results/{location}_sens_calibration_results.csv')
             for sens, spec in ave_primary_ss:
-                screen_scens[f'AVE, {int(sens*100)}%/{int(spec*100)}%'] = dict(primary='ave', sens=sens, spec=spec)
+                # find row w/ primary sens to fit and spec to fit
+                test_vals = test_calibration[(test_calibration['primary_sens_to_fit'] == sens) & (test_calibration['primary_spec_to_fit'] == spec)]
+                test_pos_vals = {
+                    'precin': test_vals['precin'].values,
+                    'cin1': test_vals['cin1'].values,
+                    'cin2': test_vals['cin2'].values,
+                    'cin3': test_vals['cin3'].values,
+                    'cancerous': test_vals['cancerous'].values
+                }
+                screen_scens[f'AVE, {int(sens*100)}%/{int(spec*100)}%'] = sc.mergedicts({'primary':'ave'}, test_pos_vals)
             for sens, spec in ave_triage_ss:
+                # find row w/ triage sens to fit and spec to fit
+                test_vals = test_calibration[(test_calibration['triage_sens_to_fit'] == sens) & (test_calibration['triage_spec_to_fit'] == spec)]
+                test_pos_vals = {
+                    'precin': test_vals['precin'],
+                    'cin1': test_vals['cin1'],
+                    'cin2': test_vals['cin2'],
+                    'cin3': test_vals['cin3'],
+                    'cancerous': test_vals['cancerous']
+                }
                 for poc,ltfu in poc_ltfus.items():
-                    screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = dict(primary='hpv', triage='ave', sens=sens, spec=spec, ltfu=ltfu)
+                    screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = sc.mergedicts({'primary':'hpv', 'triage':'ave', 'ltfu':ltfu}, test_pos_vals)
             for poc, ltfu in poc_ltfus.items():
                 screen_scens[f'{poc}+VIA'] = dict(primary='hpv', triage='via', ltfu=ltfu)
             alldf, msims = run_scens(screen_scens=screen_scens, n_seeds=n_seeds, location=location, debug=debug)

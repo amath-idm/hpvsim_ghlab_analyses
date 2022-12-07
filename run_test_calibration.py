@@ -23,8 +23,8 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    'run_test_calib',
-    # 'analyze_test_calib',
+    # 'run_test_calib',
+    'analyze_test_calib',
     # 'plot_test_calib',
 ]
 
