@@ -18,7 +18,7 @@ import matplotlib.transforms as transforms
 resfolder = 'results'
 figfolder = 'figures'
 datafolder = 'data'
-
+np.random.seed(seed=23432)
 
 ########################################################################
 #%% Plotting utils
@@ -114,7 +114,7 @@ cost_params['VIA'] = np.array([5.2*258.811/240.007, 13, 2.89])
 cost_params['VIA_sd'] = (2*1.96)*1.3/5.2
 
 cost_params['POC_HPV'] = np.array([2*258.811/240.007, 2, 2])
-cost_params['POC_HPV_sd'] = (2*1.96)*2/2
+cost_params['POC_HPV_sd'] = (2*1.96)*5/2
 cost_params['AVE'] = np.array([5.2*258.811/240.007, 13, 2.89])
 cost_params['AVE_sd'] = (2*1.96)*4/5.2
 cost_params['TA'] = np.array([60*258.811/240.007, 3.5, 3.57])
@@ -212,9 +212,11 @@ for location in locations:
             ylls += [yll]
             daly = yll + yld
             dalys += [daly]
-            total_cost = (group['new_hpv_screens'].values * costs['HPV'].values[name]) + \
-                            (group['new_via_screens'].values * costs['VIA'].values[name]) + \
-                            (group['new_poc_hpv_screens'].values * costs['POC_HPV'].values[name]) + \
+            if 'POC' in scenario:
+                hpv_cost = group['new_hpv_screens'].values * costs['POC_HPV'].values[name]
+            else:
+                hpv_cost = group['new_hpv_screens'].values * costs['HPV'].values[name]
+            total_cost = (hpv_cost) + (group['new_via_screens'].values * costs['VIA'].values[name]) + \
                             (group['new_ave_screens'].values * costs['AVE'].values[name]) + \
                             (group['new_thermal_ablations'].values * costs['TA'].values[name]) + \
                             (group['new_leeps'].values * costs['LEEP'].values[name]) + \
@@ -458,6 +460,9 @@ for location in locations:
                     extended_dominance_check = False
 
     f, ax = pl.subplots(figsize=(16, 10))
+    efficiency_data['DALYs_averted'] /=1e6
+    data_to_plot['DALYs_averted'] /= 1e6
+    alldfs['DALYs_averted'] /= 1e6
     efficiency_data.plot(ax=ax, kind='line', x='DALYs_averted', y='total_costs', color='black', label='Efficiency frontier')
 
     for i, scen in enumerate(scenarios_to_plot):
@@ -469,7 +474,7 @@ for location in locations:
 
         group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, color=colors[scen_colors[scen]], marker=markers[i], s=200)
 
-    ax.set_xlabel('DALYs averted, 2020-2060')
+    ax.set_xlabel('DALYs averted (millions), 2020-2060')
     ax.set_ylabel('Total costs, $USD 2020-2060')
     ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True)#, title='Screening method')
     # f.suptitle(f'ICER plot, {location.capitalize()}')
@@ -479,47 +484,47 @@ for location in locations:
     sc.savefig(fig_name, dpi=100)
 
     f, ax = pl.subplots(figsize=(12, 10))
-    efficiency_data = data_to_plot.copy().sort_values('total_cin_treatments').reset_index(drop=True)
-    efficient_scenarios = efficiency_data['scen_label'].values
-    num_scens = len(efficient_scenarios) - 1
-    icers = sc.autolist()
-    icers += 0
-    i = 1
-    while i <= num_scens:
-        inc_DALYs = efficiency_data.iloc[i]['DALYs_averted'] - efficiency_data.iloc[i - 1]['DALYs_averted']
-        inc_cost = efficiency_data.iloc[i]['total_cin_treatments'] - efficiency_data.iloc[i - 1]['total_cin_treatments']
-        if inc_DALYs < 0:  # if it averts negative DALYs it is dominated by definition
-            efficiency_data = efficiency_data.drop(i).reset_index(drop=True)
-            efficient_scenarios = np.delete(efficient_scenarios, i)
-            num_scens -= 1
-        else:
-            icer = inc_cost / inc_DALYs
-            extended_dominance_check = True
-            while extended_dominance_check:
-                if icer < icers[i - 1]:
-                    efficiency_data = efficiency_data.drop(i - 1).reset_index(drop=True)
-                    efficient_scenarios = np.delete(efficient_scenarios, i - 1)
-                    num_scens -= 1
-                    icers = np.delete(icers, i - 1)
-                    i -= 1
-                    inc_DALYs = efficiency_data.iloc[i]['DALYs_averted'] - efficiency_data.iloc[i - 1]['DALYs_averted']
-                    inc_cost = efficiency_data.iloc[i]['total_cin_treatments'] - efficiency_data.iloc[i - 1]['total_cin_treatments']
-                    if inc_DALYs < 0:
-                        efficiency_data = efficiency_data.drop(i).reset_index(drop=True)
-                        efficient_scenarios = np.delete(efficient_scenarios, i)
-                        num_scens -= 1
-                        i -= 1
-                        extended_dominance_check = False
-                    else:
-                        icer = inc_cost / inc_DALYs
-                        icers = np.append(icers, icer)
-                else:
-                    if icer not in icers:
-                        icers = np.append(icers, icer)
-                    i += 1
-                    extended_dominance_check = False
-
-    efficiency_data.plot(ax=ax, kind='line', x='DALYs_averted', y='total_cin_treatments', color='black')
+    # efficiency_data = data_to_plot.copy().sort_values('total_cin_treatments').reset_index(drop=True)
+    # efficient_scenarios = efficiency_data['scen_label'].values
+    # num_scens = len(efficient_scenarios) - 1
+    # icers = sc.autolist()
+    # icers += 0
+    # i = 1
+    # while i <= num_scens:
+    #     inc_DALYs = efficiency_data.iloc[i]['DALYs_averted'] - efficiency_data.iloc[i - 1]['DALYs_averted']
+    #     inc_cost = efficiency_data.iloc[i]['total_cin_treatments'] - efficiency_data.iloc[i - 1]['total_cin_treatments']
+    #     if inc_DALYs < 0:  # if it averts negative DALYs it is dominated by definition
+    #         efficiency_data = efficiency_data.drop(i).reset_index(drop=True)
+    #         efficient_scenarios = np.delete(efficient_scenarios, i)
+    #         num_scens -= 1
+    #     else:
+    #         icer = inc_cost / inc_DALYs
+    #         extended_dominance_check = True
+    #         while extended_dominance_check:
+    #             if icer < icers[i - 1]:
+    #                 efficiency_data = efficiency_data.drop(i - 1).reset_index(drop=True)
+    #                 efficient_scenarios = np.delete(efficient_scenarios, i - 1)
+    #                 num_scens -= 1
+    #                 icers = np.delete(icers, i - 1)
+    #                 i -= 1
+    #                 inc_DALYs = efficiency_data.iloc[i]['DALYs_averted'] - efficiency_data.iloc[i - 1]['DALYs_averted']
+    #                 inc_cost = efficiency_data.iloc[i]['total_cin_treatments'] - efficiency_data.iloc[i - 1]['total_cin_treatments']
+    #                 if inc_DALYs < 0:
+    #                     efficiency_data = efficiency_data.drop(i).reset_index(drop=True)
+    #                     efficient_scenarios = np.delete(efficient_scenarios, i)
+    #                     num_scens -= 1
+    #                     i -= 1
+    #                     extended_dominance_check = False
+    #                 else:
+    #                     icer = inc_cost / inc_DALYs
+    #                     icers = np.append(icers, icer)
+    #             else:
+    #                 if icer not in icers:
+    #                     icers = np.append(icers, icer)
+    #                 i += 1
+    #                 extended_dominance_check = False
+    #
+    # efficiency_data.plot(ax=ax, kind='line', x='DALYs_averted', y='total_cin_treatments', color='black')
 
     for i, scen in enumerate(scenarios_to_plot):
         group = data_to_plot[data_to_plot['scen_label'] == scen]
@@ -531,9 +536,9 @@ for location in locations:
         group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_cin_treatments',
                    color=colors[scen_colors[scen]], marker=markers[i], s=200)
 
-    ax.set_xlabel('DALYs averted, 2020-2060')
+    ax.set_xlabel('DALYs averted (millions), 2020-2060')
     ax.set_ylabel('Total CIN treatments, 2020-2060')
-    ax.get_legend().remove()
+    # ax.get_legend().remove()
     sc.SIticks(ax)
     f.tight_layout()
     fig_name = f'{figfolder}/CIN_treatment_efficiency_{location}.png'
