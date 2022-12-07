@@ -298,9 +298,9 @@ grouped_means = alldfs.groupby(['scen_label','location']).mean().reset_index()
 
 scen_colors = dict()
 for scen in scenarios:
-    if scen == 'HPV' or scen == 'VIA':
+    if scen == 'HPV, 93%/70%' or scen == 'VIA, 30%/75%':
         scen_colors[scen] = 0
-    elif scen == 'HPV+VIA' or scen == 'POC-HPV+VIA':
+    elif scen == 'HPV+VIA, 25%/56%' or scen == 'POC-HPV+VIA, 25%/56%':
         scen_colors[scen] = 1
     elif scen[:3] == 'AVE':
         scen_colors[scen] = 2
@@ -452,7 +452,8 @@ for location in locations:
                         icer = inc_cost / inc_DALYs
                         icers = np.append(icers,icer)
                 else:
-                    icers = np.append(icers,icer)
+                    if icer not in icers:
+                        icers = np.append(icers,icer)
                     i += 1
                     extended_dominance_check = False
 
@@ -477,7 +478,7 @@ for location in locations:
     fig_name = f'{figfolder}/ICER_{location}.png'
     sc.savefig(fig_name, dpi=100)
 
-    f, ax = pl.subplots(figsize=(16, 10))
+    f, ax = pl.subplots(figsize=(12, 10))
     efficiency_data = data_to_plot.copy().sort_values('total_cin_treatments').reset_index(drop=True)
     efficient_scenarios = efficiency_data['scen_label'].values
     num_scens = len(efficient_scenarios) - 1
@@ -518,8 +519,7 @@ for location in locations:
                     i += 1
                     extended_dominance_check = False
 
-    efficiency_data.plot(ax=ax, kind='line', x='DALYs_averted', y='total_cin_treatments', color='black',
-                         label='Efficiency frontier')
+    efficiency_data.plot(ax=ax, kind='line', x='DALYs_averted', y='total_cin_treatments', color='black')
 
     for i, scen in enumerate(scenarios_to_plot):
         group = data_to_plot[data_to_plot['scen_label'] == scen]
@@ -528,12 +528,12 @@ for location in locations:
             x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_cin_treatments'].values
             confidence_ellipse(x, y, ax=ax, edgecolor=colors[scen_colors[scen]])
 
-        group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_cin_treatments', label=scen,
+        group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_cin_treatments',
                    color=colors[scen_colors[scen]], marker=markers[i], s=200)
 
     ax.set_xlabel('DALYs averted, 2020-2060')
     ax.set_ylabel('Total CIN treatments, 2020-2060')
-    ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True)#, title='Screening method')
+    ax.get_legend().remove()
     sc.SIticks(ax)
     f.tight_layout()
     fig_name = f'{figfolder}/CIN_treatment_efficiency_{location}.png'
