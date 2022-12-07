@@ -89,7 +89,7 @@ def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem
         ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True)
         sc.SIticks(ax)
         ax.set_ylabel(f'{reslabel}')
-        ax.set_title(f'{reslabel} in {location.capitalize()}')
+        # ax.set_title(f'{reslabel} in {location.capitalize()}')
         fig.tight_layout()
         fig_name = f'{figfolder}/{res}_{fig_filestem}.png'
         sc.savefig(fig_name, dpi=100)
