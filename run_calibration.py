@@ -20,15 +20,15 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    'run_calibration',
+    # 'run_calibration',
     'plot_calibration',
 ]
 
 # Comment out locations to not run
 locations = [
-    'india',    # 0
+    # 'india',    # 0
     'nigeria',  # 1
-    'tanzania', # 2
+    # 'tanzania', # 2
 ]
 
 debug = False # Smaller runs
