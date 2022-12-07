@@ -211,11 +211,11 @@ if __name__ == '__main__':
                 # find row w/ triage sens to fit and spec to fit
                 test_vals = test_calibration[(test_calibration['triage_sens_to_fit'] == sens) & (test_calibration['triage_spec_to_fit'] == spec)]
                 test_pos_vals = {
-                    'precin': test_vals['precin'],
-                    'cin1': test_vals['cin1'],
-                    'cin2': test_vals['cin2'],
-                    'cin3': test_vals['cin3'],
-                    'cancerous': test_vals['cancerous']
+                    'precin': test_vals['precin'].values[0],
+                    'cin1': test_vals['cin1'].values[0],
+                    'cin2': test_vals['cin2'].values[0],
+                    'cin3': test_vals['cin3'].values[0],
+                    'cancerous': test_vals['cancerous'].values[0]
                 }
                 for poc,ltfu in poc_ltfus.items():
                     screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = sc.mergedicts({'primary':'hpv', 'triage':'ave', 'ltfu':ltfu}, test_pos_vals)
