@@ -44,7 +44,7 @@ class econ_analyzer(hpv.Analyzer):
                 if len(hpv.true(arr)): return np.mean(sim.people.age[hpv.true(arr)])
                 else: return np.nan
             li = np.floor(sim.yearvec[sim.t])
-            ltt = np.int((sim.t-1)*sim['dt'])
+            ltt = np.int((sim.t-1)*sim['dt']) # this is the timestep number vs year of sim, needed to retrieve outcomes from interventions
             lt = (sim.t-1)
 
             # Pull out characteristics of sim to decide what resources we need
@@ -100,10 +100,12 @@ class test_characteristics_analyzer(hpv.Analyzer):
         self.triage_df = None
         self.primary_screen = None
         self.triage_screen = None
+        self.disease_pos_states = None
         return
 
     def initialize(self, sim):
         super().initialize(sim)
+        self.disease_pos_states = ['cin2', 'cin3', 'cancerous']
 
         # Pull out characteristics of sim to decide what we need
         simvals = sim.meta.vals
@@ -124,7 +126,6 @@ class test_characteristics_analyzer(hpv.Analyzer):
 
     def apply(self, sim):
         if self.primary_screen is not None:
-            disease_pos_states = ['cin2', 'cin3', 'cancerous']
             if sim.yearvec[sim.t] >= sim.get_intervention(self.primary_screen).start_year:
                 intv = sim.get_intervention(self.primary_screen).outcomes
                 test_positives = intv['positive']
@@ -132,7 +133,7 @@ class test_characteristics_analyzer(hpv.Analyzer):
 
                 test_pos_disease_pos = []
                 test_neg_disease_pos = []
-                for disease_pos_state in disease_pos_states:
+                for disease_pos_state in self.disease_pos_states:
                     test_pos_disease_pos_inds = test_positives[sim.people[disease_pos_state][:,test_positives].sum(axis=0).nonzero()[0]]
                     if len(test_pos_disease_pos_inds):
                         test_pos_disease_pos = np.append(test_pos_disease_pos, test_pos_disease_pos_inds)
@@ -163,7 +164,7 @@ class test_characteristics_analyzer(hpv.Analyzer):
 
                     test_pos_disease_pos = []
                     test_neg_disease_pos = []
-                    for disease_pos_state in disease_pos_states:
+                    for disease_pos_state in self.disease_pos_states:
                         test_pos_disease_pos_inds = test_positives[
                             sim.people[disease_pos_state][:, test_positives].sum(axis=0).nonzero()[0]]
                         if len(test_pos_disease_pos_inds):

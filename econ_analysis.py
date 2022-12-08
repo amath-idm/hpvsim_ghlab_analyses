@@ -14,6 +14,7 @@ import sciris as sc
 import pylab as pl
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
+from utils import set_font
 
 resfolder = 'results'
 figfolder = 'figures'
@@ -24,15 +25,11 @@ np.random.seed(seed=23432)
 #%% Plotting utils
 ########################################################################
 
-def set_font(size=None, font='Libertinus Sans'):
-    ''' Set a custom font '''
-    sc.fonts(add=sc.thisdir(aspath=True) / 'assets' / 'LibertinusSans-Regular.otf')
-    sc.options(font=font, fontsize=size)
-    return
 
 def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     """
     Create a plot of the covariance confidence ellipse of *x* and *y*.
+    Taken directly from https://matplotlib.org/3.3.4/gallery/statistics/confidence_ellipse.html
 
     Parameters
     ----------
@@ -467,10 +464,10 @@ for location in locations:
 
     for i, scen in enumerate(scenarios_to_plot):
         group = data_to_plot[data_to_plot['scen_label'] == scen]
-        if scen != 'No screening':
-            ellipse_group = alldfs[(alldfs.location == location) & (alldfs.scen_label == scen)]
-            x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_costs'].values
-            confidence_ellipse(x, y, ax=ax, edgecolor=colors[scen_colors[scen]])
+        # if scen != 'No screening':
+        #     ellipse_group = alldfs[(alldfs.location == location) & (alldfs.scen_label == scen)]
+        #     x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_costs'].values
+        #     confidence_ellipse(x, y, ax=ax, edgecolor=colors[scen_colors[scen]])
 
         group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_costs', label=scen, color=colors[scen_colors[scen]], marker=markers[i], s=200)
 
@@ -528,10 +525,10 @@ for location in locations:
 
     for i, scen in enumerate(scenarios_to_plot):
         group = data_to_plot[data_to_plot['scen_label'] == scen]
-        if scen != 'No screening':
-            ellipse_group = alldfs[(alldfs.location == location) & (alldfs.scen_label == scen)]
-            x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_cin_treatments'].values
-            confidence_ellipse(x, y, ax=ax, edgecolor=colors[scen_colors[scen]])
+        # if scen != 'No screening':
+        #     ellipse_group = alldfs[(alldfs.location == location) & (alldfs.scen_label == scen)]
+        #     x, y = ellipse_group['DALYs_averted'].values, ellipse_group['total_cin_treatments'].values
+        #     confidence_ellipse(x, y, ax=ax, edgecolor=colors[scen_colors[scen]])
 
         group.plot(ax=ax, kind='scatter', x='DALYs_averted', y='total_cin_treatments',
                    color=colors[scen_colors[scen]], marker=markers[i], s=200)
