@@ -20,23 +20,23 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    'run_calibration',
+    # 'run_calibration',
     'plot_calibration',
 ]
 
 # Comment out locations to not run
 locations = [
-    'india',    # 0
+    # 'india',    # 0
     'nigeria',  # 1
-    'tanzania', # 2
+    # 'tanzania', # 2
 ]
 
-debug = True # Smaller runs
+debug = False # Smaller runs
 do_save = True
 
 
 # Run settings for calibration (dependent on debug)
-n_trials    = [2000, 2][debug]  # How many trials to run for calibration
+n_trials    = [5000, 2][debug]  # How many trials to run for calibration
 n_workers   = [60, 4][debug]    # How many cores to use
 storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
@@ -103,7 +103,7 @@ def load_calib(location=None, do_plot=True, which_pars=0, save_pars=True, do_plo
         sc.fonts(add=sc.thisdir(aspath=True) / 'Libertinus Sans')
         sc.options(font='Libertinus Sans')
         fig = calib.plot(res_to_plot=50, plot_type='sns.boxplot', do_save=True,
-                         fig_path=f'{ut.figfolder}/{filename}png')
+                         fig_path=f'{ut.figfolder}/{filename}')
         fig.suptitle(f'Calibration results, {location.capitalize()}')
         fig.savefig(f'{ut.figfolder}/{filename}.png')
 
@@ -133,7 +133,5 @@ if __name__ == '__main__':
         for location in locations:
             calib = load_calib(location=location, save_pars=True, do_plot_additional=False)
 
-        # Compare calibration parameters across countries
-        ut.plot_calib_pars(locations=locations)
     
     T.toc('Done')
