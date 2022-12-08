@@ -127,6 +127,7 @@ cost_params['cancer_sd'] = (2*1.96)*(33+75+159+104+12+90.3+8.6+5+4.8+241)/450
 # Thermal ablation: financial cost of US$ 3.50 per service
 # LEEP: financial cost of US$ 107 per service.
 # CaTx (take mean of this): $44.73, $64.13, $281.50, $768.88, $212.06
+# inflation based upon https://www.usinflationcalculator.com/inflation/consumer-price-index-and-annual-percent-changes-from-1913-to-2008/
 
 # India costs: mean (SD) (ref 3)
 # HPV DNA testing: US$ 14.8 ($3.8 SD).
