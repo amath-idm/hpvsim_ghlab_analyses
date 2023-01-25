@@ -20,8 +20,8 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    # 'run_calibration',
-    'plot_calibration',
+    'run_calibration',
+    # 'plot_calibration',
 ]
 
 # Comment out locations to not run
@@ -36,7 +36,7 @@ do_save = True
 
 
 # Run settings for calibration (dependent on debug)
-n_trials    = [5000, 2][debug]  # How many trials to run for calibration
+n_trials    = [2000, 2][debug]  # How many trials to run for calibration
 n_workers   = [60, 4][debug]    # How many cores to use
 storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
