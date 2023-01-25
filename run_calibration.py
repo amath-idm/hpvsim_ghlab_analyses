@@ -44,10 +44,10 @@ storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage
 ########################################################################
 # Run calibration
 ########################################################################
-def run_calib(location=None, calib=True, multiscale=True, n_trials=None, n_workers=None,
+def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
               do_plot=False, do_save=True):
 
-    pars, analyzers, interventions = rs.make_sim_parts(location=location, calib=calib, multiscale=multiscale)
+    pars, analyzers, interventions = rs.make_sim_parts(location=location, calib=calib)
     sim = rs.make_sim(pars, analyzers, interventions, datafile=f'data/{location}_data.csv')
 
     calib_pars = dict(
