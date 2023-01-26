@@ -3,7 +3,7 @@ List parameters used for genotypes in calibrations
 '''
 
 # Define key parameters -- values are [best, low, high]
-default_dysp_rate = [0.17, 0.05, 0.3] # Logistic growth curve parameter (assumption)
+default_dysp_rate = [0.5, 0.2, 0.7] # Logistic growth curve parameter (assumption)
 default_dur_dysp  = dict(par1=[6, 4, 12]) # Mean duration of dysplasia (years) for lognormal distribution
 default_transform_prob = [0.0001, 0.01, 0.2]
 def get_genotype_pars(location):

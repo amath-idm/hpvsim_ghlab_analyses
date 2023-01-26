@@ -36,7 +36,7 @@ do_save = True
 
 
 # Run settings for calibration (dependent on debug)
-n_trials    = [2000, 2][debug]  # How many trials to run for calibration
+n_trials    = [1000, 2][debug]  # How many trials to run for calibration
 n_workers   = [60, 4][debug]    # How many cores to use
 storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
@@ -52,6 +52,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
 
     calib_pars = dict(
         beta=[0.2, 0.1, 0.3],
+        dur_transform_to_cancer=dict(par1=[5, 3, 10]),
     )
 
     genotype_pars = gp.get_genotype_pars(location)
