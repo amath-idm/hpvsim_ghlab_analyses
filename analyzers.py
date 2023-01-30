@@ -51,11 +51,26 @@ class econ_analyzer(hpv.Analyzer):
             simvals = sim.meta.vals
             scen_label = simvals.scen_label
             if scen_label != 'No screening':
-                primary_screen = simvals.primary
-                if simvals.get('triage'):
-                    triage_screen = simvals.triage
+                if 'POC-HPV' in scen_label:
+                    primary_screen='hpv'
+                elif 'HPV' in scen_label:
+                    primary_screen='hpv'
+                if 'AVE' in scen_label:
+                    if '+AVE' in scen_label:
+                        triage_screen='ave'
+                        triage=True
+                    else:
+                        primary_screen='ave'
+                        triage=False
+                elif 'VIA' in scen_label:
+                    if '+VIA' in scen_label:
+                        triage_screen='via'
+                        triage=True
+                    else:
+                        primary_screen='via'
+                        triage=False
                 else:
-                    triage_screen = 'no_triage'
+                    triage=False
 
                 resource_dict = {
                     'hpv': 'new_hpv_screens',
@@ -64,10 +79,8 @@ class econ_analyzer(hpv.Analyzer):
                     'via': 'new_via_screens'
                 }
                 # Resources
-                if primary_screen in ['hpv', 'poc_hpv', 'via', 'ave']:
-                    self.df.loc[li][resource_dict[primary_screen]] += sim.get_intervention('screening').n_products_used.values[ltt]
-
-                if triage_screen in ['via', 'ave']:
+                self.df.loc[li][resource_dict[primary_screen]] += sim.get_intervention('screening').n_products_used.values[ltt]
+                if triage:
                     self.df.loc[li][resource_dict[triage_screen]] += sim.get_intervention('triage').n_products_used.values[ltt]
 
                 self.df.loc[li].new_thermal_ablations += sim.get_intervention('ablation').n_products_used.values[ltt]
@@ -83,8 +96,8 @@ class econ_analyzer(hpv.Analyzer):
 
     def finalize(self, sim):
         # Add in results that are already generated (NB, these have all been scaled already)
-        self.df['new_cancers'] = sim.results['total_cancers'][self.si:]
-        self.df['new_cancer_deaths'] = sim.results['total_cancer_deaths'][self.si:]
+        self.df['new_cancers'] = sim.results['cancers'][self.si:]
+        self.df['new_cancer_deaths'] = sim.results['cancer_deaths'][self.si:]
         self.df['new_other_deaths'] = sim.results['other_deaths'][self.si:]
         return
 

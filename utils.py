@@ -68,9 +68,8 @@ def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem
 
     colors = sc.gridcolors(10)
 
-    for ir, (res, reslabel) in enumerate({'total_cancer_incidence': 'Crude cervical cancer incidence rate (per 100,000)',
-                                          'total_cancer_deaths': 'Annual deaths from cervical cancer',
-                                          'asr_cancer': 'Age standardized cervical cancer incidence rate (per 100,000)',}.items()):
+    for ir, (res, reslabel) in enumerate({'cancer_incidence': 'Crude cervical cancer incidence rate (per 100,000)',
+                                          'asr_cancer_incidence': 'Age standardized cervical cancer incidence rate (per 100,000)',}.items()):
         fig, ax = pl.subplots(figsize=(16, 10))
         for cn, scen_label in enumerate(scens):
             df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[[f'{res}', f'{res}_low', f'{res}_high']].sum()
@@ -83,7 +82,7 @@ def plot_residual_burden(locations=None, scens=None, filestem=None, fig_filestem
             ax.plot(years, best, color=colors[cn], label=scen_label)
             ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
 
-        if res == 'asr_cancer':
+        if res == 'asr_cancer_incidence' or res == 'cancer_incidence':
             ax.plot(years, np.full(len(years), fill_value=4), linestyle='dashed', label='Elimination target')
             ax.set_ylim([0,1.1*max(high)])
         ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True)
