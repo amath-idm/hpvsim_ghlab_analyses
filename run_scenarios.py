@@ -129,18 +129,18 @@ def run_scens(location=None, screen_scens=None, # Input data
         msims[i_dx] = msim
         df = pd.DataFrame()
         df['year']                     = msim.results['year']
-        df['total_cancers']            = msim.results['total_cancers'][:] # TODO: process in a loop
-        df['total_cancers_low']        = msim.results['total_cancers'].low
-        df['total_cancers_high']       = msim.results['total_cancers'].high
-        df['total_cancer_incidence']   = msim.results['total_cancer_incidence'][:]
-        df['total_cancer_incidence_high']   = msim.results['total_cancer_incidence'].high
-        df['total_cancer_incidence_low']   = msim.results['total_cancer_incidence'].low
-        df['asr_cancer']               = msim.results['asr_cancer'][:]
-        df['asr_cancer_low']           = msim.results['asr_cancer'].low
-        df['asr_cancer_high']          = msim.results['asr_cancer'].high
-        df['total_cancer_deaths']      = msim.results['total_cancer_deaths'][:]
-        df['total_cancer_deaths_low']  = msim.results['total_cancer_deaths'].low
-        df['total_cancer_deaths_high'] = msim.results['total_cancer_deaths'].high
+        df['cancers']            = msim.results['cancers'][:] # TODO: process in a loop
+        df['cancers_low']        = msim.results['cancers'].low
+        df['cancers_high']       = msim.results['cancers'].high
+        df['cancer_incidence']   = msim.results['cancer_incidence'][:]
+        df['cancer_incidence_high']   = msim.results['cancer_incidence'].high
+        df['cancer_incidence_low']   = msim.results['cancer_incidence'].low
+        df['asr_cancer_incidence']               = msim.results['asr_cancer_incidence'][:]
+        df['asr_cancer_incidence_low']           = msim.results['asr_cancer_incidence'].low
+        df['asr_cancer_incidence_high']          = msim.results['asr_cancer_incidence'].high
+        df['cancer_deaths']      = msim.results['cancer_deaths'][:]
+        df['cancer_deaths_low']  = msim.results['cancer_deaths'].low
+        df['cancer_deaths_high'] = msim.results['cancer_deaths'].high
         df['n_screened']               = msim.results['n_screened'][:]
         df['n_screened_low']           = msim.results['n_screened'].low
         df['n_screened_high']          = msim.results['n_screened'].high
@@ -192,35 +192,65 @@ if __name__ == '__main__':
             # AVE as triage         : HPV+AVE, POCHPV+AVE (2x 2 sens/spec combos)
             screen_scens = sc.objdict({
                 'No screening': dict(),
-                'HPV, 93%/70%': dict(primary='hpv'),
-                'VIA, 30%/75%': dict(primary='via')
+                'HPV, 93%/70%': dict(
+                    primary=dict(
+                        precin=0.3,
+                        cin1=0.3,
+                        cin2=0.93,
+                        cin3=0.93,
+                        cancerous=0.93
+                    ),
+                ),
+                'VIA, 30%/75%': dict(
+                    primary=dict(
+                        precin=0.25,
+                        cin1=0.25,
+                        cin2=0.3,
+                        cin3=0.3,
+                        cancerous=0.3
+                    )
+                )
             })
             test_calibration = pd.read_csv(f'results/{location}_sens_calibration_results.csv')
             for sens, spec in ave_primary_ss:
-                # find row w/ primary sens to fit and spec to fit
-                test_vals = test_calibration[(test_calibration['primary_sens_to_fit'] == sens) & (test_calibration['primary_spec_to_fit'] == spec)]
                 test_pos_vals = {
-                    'precin': test_vals['precin'].values[0],
-                    'cin1': test_vals['cin1'].values[0],
-                    'cin2': test_vals['cin2'].values[0],
-                    'cin3': test_vals['cin3'].values[0],
-                    'cancerous': test_vals['cancerous'].values[0]
+                    'precin': 1 - spec,
+                    'cin1': 1 - spec,
+                    'cin2': sens,
+                    'cin3': sens,
+                    'cancerous': sens
                 }
-                screen_scens[f'AVE, {int(sens*100)}%/{int(spec*100)}%'] = sc.mergedicts({'primary':'ave'}, test_pos_vals)
+                screen_scens[f'AVE, {int(sens * 100)}%/{int(spec * 100)}%'] = dict(primary=test_pos_vals)
             for sens, spec in ave_triage_ss:
-                # find row w/ triage sens to fit and spec to fit
-                test_vals = test_calibration[(test_calibration['triage_sens_to_fit'] == sens) & (test_calibration['triage_spec_to_fit'] == spec)]
                 test_pos_vals = {
-                    'precin': test_vals['precin'].values[0],
-                    'cin1': test_vals['cin1'].values[0],
-                    'cin2': test_vals['cin2'].values[0],
-                    'cin3': test_vals['cin3'].values[0],
-                    'cancerous': test_vals['cancerous'].values[0]
+                    'precin': 1 - spec,
+                    'cin1': 1 - spec,
+                    'cin2': sens,
+                    'cin3': sens,
+                    'cancerous': sens
                 }
-                for poc,ltfu in poc_ltfus.items():
-                    screen_scens[f'{poc}+AVE, {int(sens*100)}%/{int(spec*100)}%'] = sc.mergedicts({'primary':'hpv', 'triage':'ave', 'ltfu':ltfu}, test_pos_vals)
+                for poc, ltfu in poc_ltfus.items():
+                    screen_scens[f'{poc}+AVE, {int(sens * 100)}%/{int(spec * 100)}%'] = dict(primary=dict(
+                        precin=0.3,
+                        cin1=0.3,
+                        cin2=0.93,
+                        cin3=0.93,
+                        cancerous=0.93
+                    ), triage=test_pos_vals, ltfu=ltfu)
             for poc, ltfu in poc_ltfus.items():
-                screen_scens[f'{poc}+VIA, 25%/56%'] = dict(primary='hpv', triage='via', ltfu=ltfu)
+                screen_scens[f'{poc}+VIA, 25%/56%'] = dict(primary=dict(
+                    precin=0.3,
+                    cin1=0.3,
+                    cin2=0.93,
+                    cin3=0.93,
+                    cancerous=0.93
+                ), triage=dict(
+                    precin=0.25,
+                    cin1=0.25,
+                    cin2=0.3,
+                    cin3=0.3,
+                    cancerous=0.3
+                ), ltfu=ltfu)
             alldf, msims = run_scens(screen_scens=screen_scens, n_seeds=n_seeds, location=location, debug=debug)
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)

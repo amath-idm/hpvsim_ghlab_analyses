@@ -36,7 +36,7 @@ do_save = True
 
 
 # Run settings for calibration (dependent on debug)
-n_trials    = [5000, 2][debug]  # How many trials to run for calibration
+n_trials    = [1000, 2][debug]  # How many trials to run for calibration
 n_workers   = [60, 4][debug]    # How many cores to use
 storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
@@ -44,14 +44,15 @@ storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage
 ########################################################################
 # Run calibration
 ########################################################################
-def run_calib(location=None, calib=True, multiscale=True, n_trials=None, n_workers=None,
+def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
               do_plot=False, do_save=True):
 
-    pars, analyzers, interventions = rs.make_sim_parts(location=location, calib=calib, multiscale=multiscale)
+    pars, analyzers, interventions = rs.make_sim_parts(location=location, calib=calib)
     sim = rs.make_sim(pars, analyzers, interventions, datafile=f'data/{location}_data.csv')
 
     calib_pars = dict(
         beta=[0.2, 0.1, 0.3],
+        dur_transformed=dict(par1=[5, 3, 10]),
     )
 
     genotype_pars = gp.get_genotype_pars(location)
@@ -105,6 +106,7 @@ def load_calib(location=None, do_plot=True, which_pars=0, save_pars=True, do_plo
         fig = calib.plot(res_to_plot=50, plot_type='sns.boxplot', do_save=True,
                          fig_path=f'{ut.figfolder}/{filename}')
         fig.suptitle(f'Calibration results, {location.capitalize()}')
+        fig.tight_layout()
         fig.savefig(f'{ut.figfolder}/{filename}.png')
 
     if save_pars:
@@ -131,7 +133,7 @@ if __name__ == '__main__':
     # Load the calibration, plot it, and save the best parameters -- usually locally
     if 'plot_calibration' in to_run:
         for location in locations:
-            calib = load_calib(location=location, save_pars=True, do_plot_additional=False)
+            calib = load_calib(location=location, do_plot=True, save_pars=True, do_plot_additional=False)
 
     
     T.toc('Done')

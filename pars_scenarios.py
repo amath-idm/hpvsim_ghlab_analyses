@@ -9,21 +9,16 @@ import hpvsim as hpv
 import pars_data as dp
 
 
-def get_screen_intvs(location, primary=None, triage=None, ltfu=None, precin=None, cin1=None, cin2=None, cin3=None,
-                     cancerous=None, start_year=2020, end_year=2040, sim_end_year=2060):
+def get_screen_intvs(location, primary=None, triage=None, ltfu=None, start_year=2020, end_year=2040, sim_end_year=2060):
     ''' Make interventions for screening scenarios '''
 
     # Return empty list if nothing is defined
     if primary is None: return []
 
-    # Create AVE products
-    if primary=='ave' or triage=='ave':
-        if precin is None or cin1 is None or cin2 is None or cin3 is None or cancerous is None:
-            raise ValueError('Must provide test positivity values if using AVE test.')
-        else:
-            ave = make_AVE(precin, cin1, cin2, cin3, cancerous)
-        if primary == 'ave': primary = ave
-        else: triage=ave
+    # Create screen products
+    primary_test = make_screen_test(**primary)
+    if triage is not None:
+        triage_test = make_screen_test(**triage)
 
     # Define gradual scale-up of screening
     screen_ramp = np.arange(start_year, end_year, dtype=int) # Ramp-up years
@@ -36,7 +31,7 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, precin=None
     screen_eligible = lambda sim: np.isnan(sim.people.date_screened) | \
                                   (sim.t > (sim.people.date_screened + 5 / sim['dt']))
     screening = hpv.routine_screening(
-        product=primary,
+        product=primary_test,
         prob=screen_coverage,
         eligibility=screen_eligible,
         age_range=[30, 50],
@@ -51,7 +46,7 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, precin=None
             start_year=start_year,
             prob=1 - ltfu,
             annual_prob=False,
-            product=triage,
+            product=triage_test,
             eligibility=screen_positive,
             label='triage'
         )
@@ -112,9 +107,9 @@ def get_screen_intvs(location, primary=None, triage=None, ltfu=None, precin=None
     return st_intvs
 
 
-def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
+def make_screen_test(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6, ):
     '''
-    Make AVE product using P(T+| health state) for health states HPV, CIN1, CIN2, CIN3, and cancer
+    Make screen product using P(T+| health state) for health states HPV, CIN1, CIN2, CIN3, and cancer
     '''
 
     basedf = pd.read_csv('dx_pars.csv')
@@ -132,6 +127,6 @@ def make_AVE(precin=0.25, cin1=0.3, cin2=0.45, cin3=0.45, cancerous=0.6):
         new_states += new_neg_vals
     new_states_df = pd.concat(new_states)
 
-    # Make the ave product
-    ave = hpv.dx(pd.concat([not_changing, new_states_df]), hierarchy=['positive', 'negative'])
-    return ave
+    # Make the screen product
+    screen_test = hpv.dx(pd.concat([not_changing, new_states_df]), hierarchy=['positive', 'negative'])
+    return screen_test

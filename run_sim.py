@@ -38,17 +38,18 @@ save_plots = True
 
 #%% Simulation creation functions
 def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
-                   debug=0, screen_intvs=None, multiscale=True, econ_analyzer=True,
+                   debug=0, screen_intvs=None, econ_analyzer=True,
                    sens_analyzer=False, end=None):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
     if end is None:
         end = 2060
     if calib:
         end = 2020
+        start = 1980
     # Parameters
     pars = dict(
         n_agents       = [50e3,1e3][debug],
-        dt             = [0.5,1.0][debug],
+        dt             = [0.25,1.0][debug],
         start          = [1950,1980][debug],
         end            = end,
         network        = 'default',
@@ -59,8 +60,6 @@ def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
         genotypes      = [16, 18, 'hrhpv'],
         condoms        = dict(m=0.01, c=0.1, o=0.2),
         eff_condoms    = 0.5,
-        use_multiscale = multiscale,
-        ms_agent_ratio = 100,
         verbose        = 0.0,
     )
 
