@@ -16,7 +16,7 @@ def get_genotype_pars(location):
                 nigeria  = default_sev_rate,
                 tanzania = default_sev_rate,
             ),
-            dur_dysp=dict(
+            dur_episomal=dict(
                 india    = default_dur_episomal,
                 nigeria  = default_dur_episomal,
                 tanzania = default_dur_episomal,
@@ -28,7 +28,7 @@ def get_genotype_pars(location):
                 nigeria  = default_sev_rate,
                 tanzania = default_sev_rate,
             ),
-            dur_dysp=dict(
+            dur_episomal=dict(
                 india    = default_dur_episomal,
                 nigeria  = default_dur_episomal,
                 tanzania = default_dur_episomal,
@@ -41,7 +41,7 @@ def get_genotype_pars(location):
                 nigeria  = default_sev_rate,
                 tanzania = default_sev_rate,
             ),
-            dur_dysp=dict(
+            dur_episomal=dict(
                 india    = default_dur_episomal,
                 nigeria  = default_dur_episomal,
                 tanzania = default_dur_episomal,
