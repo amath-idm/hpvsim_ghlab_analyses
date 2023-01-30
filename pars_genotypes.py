@@ -3,48 +3,48 @@ List parameters used for genotypes in calibrations
 '''
 
 # Define key parameters -- values are [best, low, high]
-default_dysp_rate = [0.5, 0.2, 0.7] # Logistic growth curve parameter (assumption)
-default_dur_dysp  = dict(par1=[6, 4, 12]) # Mean duration of dysplasia (years) for lognormal distribution
+default_sev_rate = [0.5, 0.2, 0.7] # Logistic growth curve parameter (assumption)
+default_dur_episomal  = dict(par1=[6, 4, 12]) # Mean duration of dysplasia (years) for lognormal distribution
 default_transform_prob = [0.0001, 0.01, 0.2]
 def get_genotype_pars(location):
     ''' Define genotype parameters '''
 
     all_genotype_pars = dict(
         hpv16=dict(
-            dysp_rate=dict(
-                india    = default_dysp_rate,
-                nigeria  = default_dysp_rate,
-                tanzania = default_dysp_rate,
+            sev_rate=dict(
+                india    = default_sev_rate,
+                nigeria  = default_sev_rate,
+                tanzania = default_sev_rate,
             ),
             dur_dysp=dict(
-                india    = default_dur_dysp,
-                nigeria  = default_dur_dysp,
-                tanzania = default_dur_dysp,
+                india    = default_dur_episomal,
+                nigeria  = default_dur_episomal,
+                tanzania = default_dur_episomal,
             ),
         ),
         hpv18=dict(
-            dysp_rate=dict(
-                india    = default_dysp_rate,
-                nigeria  = default_dysp_rate,
-                tanzania = default_dysp_rate,
+            sev_rate=dict(
+                india    = default_sev_rate,
+                nigeria  = default_sev_rate,
+                tanzania = default_sev_rate,
             ),
             dur_dysp=dict(
-                india    = default_dur_dysp,
-                nigeria  = default_dur_dysp,
-                tanzania = default_dur_dysp,
+                india    = default_dur_episomal,
+                nigeria  = default_dur_episomal,
+                tanzania = default_dur_episomal,
             ),
 
         ),
         hrhpv=dict(
-            dysp_rate=dict(
-                india    = default_dysp_rate,
-                nigeria  = default_dysp_rate,
-                tanzania = default_dysp_rate,
+            sev_rate=dict(
+                india    = default_sev_rate,
+                nigeria  = default_sev_rate,
+                tanzania = default_sev_rate,
             ),
             dur_dysp=dict(
-                india    = default_dur_dysp,
-                nigeria  = default_dur_dysp,
-                tanzania = default_dur_dysp,
+                india    = default_dur_episomal,
+                nigeria  = default_dur_episomal,
+                tanzania = default_dur_episomal,
             ),
 
         )

@@ -20,8 +20,8 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    # 'run_calibration',
-    'plot_calibration',
+    'run_calibration',
+    # 'plot_calibration',
 ]
 
 # Comment out locations to not run
@@ -52,7 +52,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
 
     calib_pars = dict(
         beta=[0.2, 0.1, 0.3],
-        dur_transform_to_cancer=dict(par1=[5, 3, 10]),
+        dur_transformed=dict(par1=[5, 3, 10]),
     )
 
     genotype_pars = gp.get_genotype_pars(location)
