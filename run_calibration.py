@@ -20,8 +20,8 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    # 'run_calibration',
-    'plot_calibration',
+    'run_calibration',
+    # 'plot_calibration',
 ]
 
 # Comment out locations to not run
@@ -31,7 +31,7 @@ locations = [
     # 'tanzania', # 2
 ]
 
-debug = False # Smaller runs
+debug = True # Smaller runs
 do_save = True
 
 

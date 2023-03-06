@@ -28,7 +28,7 @@ locations = [
 ]
 
 # Debug switch
-debug = 0 # Run with smaller population sizes and in serial
+debug = 1 # Run with smaller population sizes and in serial
 do_shrink = True # Do not keep people when running sims (saves memory)
 
 # Save settings
@@ -171,7 +171,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
     return sim
 
 
-def run_sims(locations=None, *args, **kwargs):
+def run_sims(locations=None, **kwargs):
     ''' Run multiple simulations in parallel '''
     
     kwargs = sc.mergedicts(dict(use_calib_pars=True, debug=debug), kwargs)
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     T = sc.timer()
     
     # Run a single sim per location -- usually locally, can be used for sanity checking and debugging
-    sims = run_sims(locations)
+    sims = run_sims(locations, )
     
     T.toc('Done')
 
