@@ -76,7 +76,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
             f'data/{location}_cancer_types.csv',
         ]
     calib = hpv.Calibration(sim, calib_pars=calib_pars, genotype_pars=genotype_pars,
-                            name=f'{location}_calib',
+                            name=f'{location}_calib_mar',
                             datafiles=datafiles,
                             total_trials=n_trials, n_workers=n_workers,
                             storage=storage
