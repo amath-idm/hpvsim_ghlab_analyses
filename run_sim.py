@@ -120,7 +120,8 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 #%% Simulation running functions
 
 def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
-            debug=0, seed=0, vaccination_coverage=None, sens_analyzer=False,
+            debug=0, seed=0, vaccination_coverage=None,
+            econ_analyzer=True, sens_analyzer=False,
             label=None, meta=None, verbose=0.1, end=None,
             do_save=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
@@ -135,7 +136,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer,
-                          screen_intvs=screen_intvs, end=end, debug=debug)
+                          econ_analyzer=econ_analyzer, screen_intvs=screen_intvs, end=end, debug=debug)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 
     # Store metadata
@@ -187,7 +188,12 @@ if __name__ == '__main__':
     T = sc.timer()
     
     # Run a single sim per location -- usually locally, can be used for sanity checking and debugging
-    sims = run_sims(locations, vaccination_coverage = sc.loadobj(f'{ut.datafolder}/vaccination_coverage.obj'), use_calib_pars=False)
+    sims = run_sims(locations,
+                    vaccination_coverage = sc.loadobj(f'{ut.datafolder}/vaccination_coverage.obj'),
+                    use_calib_pars=False,
+                    econ_analyzer=False,
+                    sens_analyzer=False,
+                    )
     
     T.toc('Done')
 
