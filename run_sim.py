@@ -187,7 +187,7 @@ if __name__ == '__main__':
     T = sc.timer()
     
     # Run a single sim per location -- usually locally, can be used for sanity checking and debugging
-    sims = run_sims(locations, )
+    sims = run_sims(locations, vaccination_coverage = sc.loadobj(f'{ut.datafolder}/vaccination_coverage.obj'), use_calib_pars=False)
     
     T.toc('Done')
 
