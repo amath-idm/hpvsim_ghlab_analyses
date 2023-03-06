@@ -31,7 +31,7 @@ locations = [
     # 'tanzania', # 2
 ]
 
-debug = True # Smaller runs
+debug = False # Smaller runs
 do_save = True
 
 
