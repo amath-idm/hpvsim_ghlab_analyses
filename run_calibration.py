@@ -37,8 +37,8 @@ do_save = True
 
 # Run settings for calibration (dependent on debug)
 n_trials    = [1000, 2][debug]  # How many trials to run for calibration
-n_workers   = [60, 4][debug]    # How many cores to use
-storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][1] # Storage for calibrations
+n_workers   = [40, 4][debug]    # How many cores to use
+storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
 
 ########################################################################
