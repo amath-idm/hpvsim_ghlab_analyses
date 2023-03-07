@@ -13,6 +13,7 @@ With debug=True, should take 5-10 min to run.
 import sciris as sc
 import hpvsim as hpv
 import optuna
+from sqlalchemy.pool import NullPool
 
 # Imports from this repository
 import run_sim as rs
