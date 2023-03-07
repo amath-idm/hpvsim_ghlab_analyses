@@ -38,7 +38,7 @@ do_save = True
 # Run settings for calibration (dependent on debug)
 n_trials    = [1000, 2][debug]  # How many trials to run for calibration
 n_workers   = [40, 4][debug]    # How many cores to use
-storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
+storage_url     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
 
 ########################################################################
@@ -75,6 +75,11 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
             f'data/{location}_cin3_types.csv',
             f'data/{location}_cancer_types.csv',
         ]
+    if storage_url is None:
+        storage = None
+    else:
+        storage = optuna.storages.RDBStorage(storage_url, engine_kwargs={"poolclass": NullPool})
+
     calib = hpv.Calibration(sim, calib_pars=calib_pars, genotype_pars=genotype_pars,
                             name=f'{location}_calib_mar',
                             datafiles=datafiles,
