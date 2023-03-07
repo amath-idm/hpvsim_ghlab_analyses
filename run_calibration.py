@@ -12,6 +12,7 @@ With debug=True, should take 5-10 min to run.
 # Standard imports
 import sciris as sc
 import hpvsim as hpv
+import optuna
 
 # Imports from this repository
 import run_sim as rs
