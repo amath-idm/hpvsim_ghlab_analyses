@@ -118,9 +118,9 @@ def plot_ICER(locations=None, scens=None, filestem=None, fig_filestem=None):
     cin_treatments = dict()
 
     for cn, scen_label in enumerate(scens):
-        df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[['total_cancers', 'total_cancer_deaths', 'n_cin_treated']].sum()
-        cancers[scen_label] = np.array(df['total_cancers'])[50:106].sum()
-        cancer_deaths[scen_label] = np.array(df['total_cancer_deaths'])[50:106].sum()
+        df = bigdf[(bigdf.scen_label == scen_label)].groupby('year')[['cancers', 'cancer_deaths', 'n_cin_treated']].sum()
+        cancers[scen_label] = np.array(df['cancers'])[50:106].sum()
+        cancer_deaths[scen_label] = np.array(df['cancer_deaths'])[50:106].sum()
         cin_treatments[scen_label] = np.array(df['n_cin_treated'])[50:106].sum()
 
     data_for_plot = pd.DataFrame()

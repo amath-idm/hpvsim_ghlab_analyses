@@ -22,8 +22,8 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    'run_scenarios',
-    # 'plot_scenarios',
+    # 'run_scenarios',
+    'plot_scenarios',
 ]
 
 # Comment out locations to not run
@@ -286,21 +286,21 @@ if __name__ == '__main__':
             )
 
 
-        # ut.plot_ICER(
-        #     filestem='screening_results',
-        #     locations=['india', 'nigeria', 'tanzania'],
-        #     scens=[
-        #         'HPV',
-        #         'VIA',
-        #         'AVE, 90%/83%',
-        #         'AVE, 82%/86%',
-        #         'AVE, 62%/86%',
-        #         'HPV+VIA',
-        #         'HPV+AVE, 95%/55%',
-        #         'HPV+AVE, 90%/70%',
-        #         'POC HPV+VIA',
-        #         'POC HPV+AVE, 95%/55%',
-        #         'POC HPV+AVE, 90%/70%',
-        #     ],
-        #     fig_filestem='icer'
-        # )
+        ut.plot_ICER(
+            filestem='screening_results',
+            locations=['india', 'nigeria', 'tanzania'],
+            scens=[
+                'HPV',
+                'VIA',
+                'AVE, 90%/83%',
+                'AVE, 82%/86%',
+                'AVE, 62%/86%',
+                'HPV+VIA',
+                'HPV+AVE, 95%/55%',
+                'HPV+AVE, 90%/70%',
+                'POC HPV+VIA',
+                'POC HPV+AVE, 95%/55%',
+                'POC HPV+AVE, 90%/70%',
+            ],
+            fig_filestem='icer'
+        )

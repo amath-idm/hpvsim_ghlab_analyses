@@ -60,6 +60,7 @@ def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
         genotypes      = [16, 18, 'hrhpv'],
         condoms        = dict(m=0.01, c=0.1, o=0.2),
         eff_condoms    = 0.5,
+        ms_agent_ratio = 100,
         verbose        = 0.0,
     )
 
