@@ -22,8 +22,8 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    'run_calibration',
-    # 'plot_calibration',
+    # 'run_calibration',
+    'plot_calibration',
 ]
 
 # Comment out locations to not run
@@ -106,7 +106,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
 ########################################################################
 def load_calib(location=None, do_plot=True, which_pars=0, save_pars=True, do_plot_additional=False):
 
-    filename = 'nigeria5' #f'{location}_calib'
+    filename = f'{location}_calib'
     calib = sc.load(f'{ut.resfolder}/{filename}.obj')
     if do_plot:
         sc.fonts(add=sc.thisdir(aspath=True) / 'Libertinus Sans')
