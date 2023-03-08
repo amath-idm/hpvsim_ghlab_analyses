@@ -28,8 +28,8 @@ to_run = [
 
 # Comment out locations to not run
 locations = [
-    # 'india',    # 0
-    'nigeria',  # 1
+    'india',    # 0
+    # 'nigeria',  # 1
     # 'tanzania', # 2
 ]
 
@@ -90,6 +90,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
                             )
     calib.calibrate()
     filename = f'{location}_calib'
+    calib.run_args = None # Remove
     if do_plot:
         calib.plot(do_save=True, fig_path=f'{ut.figfolder}/{filename}.png')
     if do_save:
@@ -105,7 +106,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
 ########################################################################
 def load_calib(location=None, do_plot=True, which_pars=0, save_pars=True, do_plot_additional=False):
 
-    filename = f'{location}_calib'
+    filename = 'nigeria5' #f'{location}_calib'
     calib = sc.load(f'{ut.resfolder}/{filename}.obj')
     if do_plot:
         sc.fonts(add=sc.thisdir(aspath=True) / 'Libertinus Sans')
