@@ -3,18 +3,18 @@ List parameters used for genotypes in calibrations
 '''
 
 # Define key parameters -- values are [best, low, high]
-default_sev_rate = [0.5, 0.2, 0.7] # Logistic growth curve parameter (assumption)
+default_sev_fn = dict(k=[0.5, 0.2, 0.7]) # Logistic growth curve parameter (assumption)
 default_dur_episomal  = dict(par1=[6, 4, 12]) # Mean duration of dysplasia (years) for lognormal distribution
-default_transform_prob = [0.0001, 0.01, 0.2]
+default_transform_prob = [0.0001, 0.00001, 0.001]
 def get_genotype_pars(location):
     ''' Define genotype parameters '''
 
     all_genotype_pars = dict(
         hpv16=dict(
-            sev_rate=dict(
-                india    = default_sev_rate,
-                nigeria  = default_sev_rate,
-                tanzania = default_sev_rate,
+            sev_fn=dict(
+                india    = default_sev_fn,
+                nigeria  = default_sev_fn,
+                tanzania = default_sev_fn,
             ),
             dur_episomal=dict(
                 india    = default_dur_episomal,
@@ -23,10 +23,10 @@ def get_genotype_pars(location):
             ),
         ),
         hpv18=dict(
-            sev_rate=dict(
-                india    = default_sev_rate,
-                nigeria  = default_sev_rate,
-                tanzania = default_sev_rate,
+            sev_fn=dict(
+                india    = default_sev_fn,
+                nigeria  = default_sev_fn,
+                tanzania = default_sev_fn,
             ),
             dur_episomal=dict(
                 india    = default_dur_episomal,
@@ -36,10 +36,10 @@ def get_genotype_pars(location):
 
         ),
         hrhpv=dict(
-            sev_rate=dict(
-                india    = default_sev_rate,
-                nigeria  = default_sev_rate,
-                tanzania = default_sev_rate,
+            sev_fn=dict(
+                india    = default_sev_fn,
+                nigeria  = default_sev_fn,
+                tanzania = default_sev_fn,
             ),
             dur_episomal=dict(
                 india    = default_dur_episomal,

@@ -12,6 +12,8 @@ With debug=True, should take 5-10 min to run.
 # Standard imports
 import sciris as sc
 import hpvsim as hpv
+import optuna
+from sqlalchemy.pool import NullPool
 
 # Imports from this repository
 import run_sim as rs
@@ -20,8 +22,8 @@ import utils as ut
 
 # Comment out to not run
 to_run = [
-    # 'run_calibration',
-    'plot_calibration',
+    'run_calibration',
+    # 'plot_calibration',
 ]
 
 # Comment out locations to not run
@@ -31,14 +33,14 @@ locations = [
     # 'tanzania', # 2
 ]
 
-debug = False # Smaller runs
+debug = 0 # Smaller runs
 do_save = True
 
 
 # Run settings for calibration (dependent on debug)
 n_trials    = [1000, 2][debug]  # How many trials to run for calibration
-n_workers   = [60, 4][debug]    # How many cores to use
-storage     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
+n_workers   = [40, 4][debug]    # How many cores to use
+storage_url     = ["mysql://hpvsim_user@localhost/hpvsim_db", None][debug] # Storage for calibrations
 
 
 ########################################################################
@@ -75,14 +77,20 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
             f'data/{location}_cin3_types.csv',
             f'data/{location}_cancer_types.csv',
         ]
+    if storage_url is None:
+        storage = None
+    else:
+        storage = optuna.storages.RDBStorage(storage_url, engine_kwargs={"poolclass": NullPool})
+
     calib = hpv.Calibration(sim, calib_pars=calib_pars, genotype_pars=genotype_pars,
-                            name=f'{location}_calib',
+                            name=f'{location}_calib_mar',
                             datafiles=datafiles,
                             total_trials=n_trials, n_workers=n_workers,
                             storage=storage
                             )
     calib.calibrate()
     filename = f'{location}_calib'
+    calib.run_args = None # Remove
     if do_plot:
         calib.plot(do_save=True, fig_path=f'{ut.figfolder}/{filename}.png')
     if do_save:
@@ -98,7 +106,7 @@ def run_calib(location=None, calib=True, n_trials=None, n_workers=None,
 ########################################################################
 def load_calib(location=None, do_plot=True, which_pars=0, save_pars=True, do_plot_additional=False):
 
-    filename = f'{location}_calib'
+    filename = 'nigeria5' #f'{location}_calib'
     calib = sc.load(f'{ut.resfolder}/{filename}.obj')
     if do_plot:
         sc.fonts(add=sc.thisdir(aspath=True) / 'Libertinus Sans')
