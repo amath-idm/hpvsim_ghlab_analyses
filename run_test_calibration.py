@@ -23,8 +23,8 @@ import analyzers as an
 
 # Comment out to not run
 to_run = [
-    # 'run_test_calib',
-    'analyze_test_calib',
+    'run_test_calib',
+    # 'analyze_test_calib',
     # 'plot_test_calib',
 ]
 
@@ -39,7 +39,7 @@ resfolder = 'results'
 figfolder = 'figures'
 datafolder = 'data'
 
-debug = 0
+debug = 1
 n_draws = [1000, 5][debug]
 
 #%% Functions
