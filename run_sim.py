@@ -28,7 +28,7 @@ locations = [
 ]
 
 # Debug switch
-debug = 0 # Run with smaller population sizes and in serial
+debug = 1 # Run with smaller population sizes and in serial
 do_shrink = True # Do not keep people when running sims (saves memory)
 
 # Save settings
@@ -60,6 +60,7 @@ def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
         genotypes      = [16, 18, 'hrhpv'],
         condoms        = dict(m=0.01, c=0.1, o=0.2),
         eff_condoms    = 0.5,
+        ms_agent_ratio = 100,
         verbose        = 0.0,
     )
 
@@ -120,7 +121,8 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 #%% Simulation running functions
 
 def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
-            debug=0, seed=0, vaccination_coverage=None, sens_analyzer=False,
+            debug=0, seed=0, vaccination_coverage=None,
+            econ_analyzer=True, sens_analyzer=False,
             label=None, meta=None, verbose=0.1, end=None,
             do_save=False, die=False):
     ''' Assemble the parts into a complete sim and run it '''
@@ -135,7 +137,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer,
-                          screen_intvs=screen_intvs, end=end, debug=debug)
+                          econ_analyzer=econ_analyzer, screen_intvs=screen_intvs, end=end, debug=debug)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 
     # Store metadata
@@ -171,7 +173,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
     return sim
 
 
-def run_sims(locations=None, *args, **kwargs):
+def run_sims(locations=None, **kwargs):
     ''' Run multiple simulations in parallel '''
     
     kwargs = sc.mergedicts(dict(use_calib_pars=True, debug=debug), kwargs)
@@ -187,7 +189,12 @@ if __name__ == '__main__':
     T = sc.timer()
     
     # Run a single sim per location -- usually locally, can be used for sanity checking and debugging
-    sims = run_sims(locations)
+    sims = run_sims(locations,
+                    vaccination_coverage = sc.loadobj(f'{ut.datafolder}/vaccination_coverage.obj'),
+                    use_calib_pars=False,
+                    econ_analyzer=False,
+                    sens_analyzer=False,
+                    )
     
     T.toc('Done')
 
