@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import sciris as sc
 import hpvsim as hpv
+import pylab as pl
 
 # Imports from this repository
 import run_sim as rs
@@ -27,6 +28,8 @@ to_run = [
 locations = [
     'nigeria',  # 1
 ]
+
+debug = False
 
 # Options for vaccination coverage
 vax_coverage_levels = np.linspace(0,1,11)
@@ -71,7 +74,7 @@ def run_vx_scens(location=None, vax_coverage_levels=None, debug=0, verbose=-1):
 
     # Actually run
     sc.heading(f'Running {len(ikw)} scenario sims...')
-    kwargs = dict(use_calib_pars=True, verbose=verbose, debug=debug, location=location)
+    kwargs = dict(use_calib_pars=True, econ_analyzer=False, verbose=verbose, debug=debug, location=location)
     sims = sc.parallelize(rs.run_sim, iterkwargs=ikw, kwargs=kwargs)
 
     # SAve results
@@ -86,6 +89,7 @@ def run_vx_scens(location=None, vax_coverage_levels=None, debug=0, verbose=-1):
         df['n_vaccinated']          = sim.results['n_vaccinated'][:]
         df['n_vaccinated']          = sim.results['n_vaccinated'][:]
         df['hpv_incidence']         = sim.results['hpv_incidence'][:]
+        df['vx_coverage']           = sim.meta.vals.vx_coverage
         df['location'] = location
         dfs += df
 
@@ -108,7 +112,7 @@ if __name__ == '__main__':
     if 'run_scenarios' in to_run:
         alldfs = sc.autolist()
         for location in locations:
-            alldf, sims = run_vx_scens(vax_coverage_levels=vax_coverage_levels, location=location)
+            alldf, sims = run_vx_scens(vax_coverage_levels=vax_coverage_levels, location=location, debug=debug)
             alldfs += alldf
             sc.saveobj(f'{ut.resfolder}/{location}_{filestem}.obj', alldf)
 
@@ -119,26 +123,32 @@ if __name__ == '__main__':
     if 'plot_scenarios' in to_run:
         for location in locations:
 
-            df = sc.loadobj(f'{ut.resfolder}/{location}_{filestem}.obj')
+            bigdf = sc.loadobj(f'{ut.resfolder}/{location}_{filestem}.obj')
+            fig, axes = pl.subplots(1, 3, figsize=(16, 10))
+            colors = sc.vectocolor(vax_coverage_levels)
 
-            fig, ax = pl.subplots(1, 3, figsize=(16, 10))
-            for i_vx, vx_coverage in enumerate(vax_coverage_levels):
+            res_to_plot = {
+                'hpv_incidence': 'HPV incidence',
+                'cancer_incidence': 'Crude cervical cancer incidence rate (per 100,000)',
+                 'asr_cancer_incidence': 'Age standardized cervical cancer incidence rate (per 100,000)'
+            }
 
-                years = np.array(df.index)[50:106]
-                best = np.array(df[res])[50:106]
-                low = np.array(df[f'{res}_low'])[50:106]
-                high = np.array(df[f'{res}_high'])[50:106]
+            for ir, (res, reslabel) in enumerate(res_to_plot.items()):
+                ax = axes[ir]
 
-                ax.plot(years, best, color=colors[cn], label=scen_label)
-                ax.fill_between(years, low, high, color=colors[cn], alpha=0.3)
+                for i_vx, vx_coverage in enumerate(vax_coverage_levels):
+                    df = bigdf[(bigdf.vx_coverage == vx_coverage)][[f'{res}']]
+                    years = np.array(df.index)  # [50:106]
+                    best = np.array(df[res])#[50:106]
+                    ax.plot(years, best, color=colors[i_vx], label=f'{vx_coverage:.2f}')
 
-            if res == 'asr_cancer_incidence' or res == 'cancer_incidence':
-                ax.plot(years, np.full(len(years), fill_value=4), linestyle='dashed', label='Elimination target')
-                ax.set_ylim([0, 1.1 * max(high)])
+                if res == 'asr_cancer_incidence' or res == 'cancer_incidence':
+                    ax.plot(years, np.full(len(years), fill_value=4), linestyle='dashed', label='Elimination target')
+                    ax.set_ylim([0, 1.1 * max(best)])
+
             ax.legend(bbox_to_anchor=(1.05, 0.8), fancybox=True)
             sc.SIticks(ax)
             ax.set_ylabel(f'{reslabel}')
-            # ax.set_title(f'{reslabel} in {location.capitalize()}')
             fig.tight_layout()
-            fig_name = f'{figfolder}/{res}_{fig_filestem}.png'
+            fig_name = f'figures/{location}_{filestem}.png'
             sc.savefig(fig_name, dpi=100)
