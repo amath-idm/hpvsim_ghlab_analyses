@@ -36,7 +36,7 @@ vax_coverage_levels = np.linspace(0,1,11)
 
 #%% Functions
 
-def run_vx_scens(location=None, vax_coverage_levels=None, debug=0, verbose=-1):
+def run_vx_scens(location=None, vax_coverage_levels=None, debug=0, verbose=1):
     '''
     Run all vaccination coverage levels
     '''
