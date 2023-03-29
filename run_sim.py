@@ -37,8 +37,8 @@ save_plots = True
 
 
 #%% Simulation creation functions
-def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
-                   debug=0, screen_intvs=None, econ_analyzer=True,
+def make_sim_parts(location=None, vaccination_coverage=None, routine_vx=None, campaign_vx=None,
+                   calib=False, debug=0, screen_intvs=None, econ_analyzer=True,
                    sens_analyzer=False, end=None):
     ''' Define parameters, analyzers, and interventions for the simulation -- not the sim itself '''
     if end is None:
@@ -46,6 +46,7 @@ def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
     if calib:
         end = 2020
         start = 1980
+
     # Parameters
     pars = dict(
         n_agents       = [50e3,1e3][debug],
@@ -67,6 +68,7 @@ def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
     # Analyzers
     analyzers = sc.autolist()
     interventions = sc.autolist()
+
     if not calib:
         if econ_analyzer:
             analyzers += an.econ_analyzer()
@@ -74,34 +76,36 @@ def make_sim_parts(location=None, vaccination_coverage=None, calib=False,
             analyzers += an.test_characteristics_analyzer()
 
         # Routine vaccination
-        # Find index of sim end date
-        ind = np.where(vaccination_coverage[location]['routine']['years']==(end+1))[0][0]
-        routine_years   = vaccination_coverage[location]['routine']['years'][:ind] ### ONLY USING 1980-2060, WHICH IS WHY THIS INDEX IS HERE
-        routine_values  = vaccination_coverage[location]['routine']['coverage'][:ind]
+        if routine_vx is None: # If it hasn't been passed in directly, make it here
+            # Find index of sim end date
+            ind = np.where(vaccination_coverage[location]['routine']['years']==(end+1))[0][0]
+            routine_years   = vaccination_coverage[location]['routine']['years'][:ind] ### ONLY USING 1980-2060, WHICH IS WHY THIS INDEX IS HERE
+            routine_values  = vaccination_coverage[location]['routine']['coverage'][:ind]
 
-        routine_vx = hpv.routine_vx(
-            prob=routine_values,
-            years=routine_years,
-            product='bivalent',
-            age_range=(9, 10),
-            label='Routine'
-        )
+            routine_vx = hpv.routine_vx(
+                prob=routine_values,
+                years=routine_years,
+                product='bivalent',
+                age_range=(9, 10),
+                label='Routine'
+            )
 
-        # These locations have campaign coverage in the datafile
-        if location in ['nigeria', 'india']:
-            campaign_value = vaccination_coverage[location]['campaign']['coverage'][0]
-            campaign_year  = vaccination_coverage[location]['campaign']['years'][0]
-        else:
-            campaign_value = vaccination_coverage['nigeria']['campaign']['coverage'][0] # Assume same as nigeria
-            campaign_year  = vaccination_coverage['nigeria']['campaign']['years'][0]
+        if campaign_vx is None:
+            # These locations have campaign coverage in the datafile
+            if location in ['nigeria', 'india']:
+                campaign_value = vaccination_coverage[location]['campaign']['coverage'][0]
+                campaign_year  = vaccination_coverage[location]['campaign']['years'][0]
+            else:
+                campaign_value = vaccination_coverage['nigeria']['campaign']['coverage'][0] # Assume same as nigeria
+                campaign_year  = vaccination_coverage['nigeria']['campaign']['years'][0]
 
-        campaign_vx = hpv.campaign_vx(
-            prob=campaign_value,
-            years=campaign_year,
-            product='bivalent',
-            age_range=(9, 14),
-            label='Campaign'
-        )
+            campaign_vx = hpv.campaign_vx(
+                prob=campaign_value,
+                years=campaign_year,
+                product='bivalent',
+                age_range=(9, 14),
+                label='Campaign'
+            )
 
         interventions += [routine_vx, campaign_vx]
 
@@ -121,6 +125,7 @@ def make_sim(pars=None, analyzers=None, interventions=None, datafile=None, seed=
 #%% Simulation running functions
 
 def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
+            routine_vx=None, campaign_vx=None,
             debug=0, seed=0, vaccination_coverage=None,
             econ_analyzer=True, sens_analyzer=False,
             label=None, meta=None, verbose=0.1, end=None,
@@ -129,7 +134,7 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
 
     # Decide what message to print
     if meta is not None:
-        msg = f'Making sim {meta.inds} ({meta.count} of {meta.n_sims}) for {location}'
+        msg = f'Making sim {meta.count} of {meta.n_sims} for {location}'
     else:
         msg = f'Making sim for {location}'
     if debug: msg += ' IN DEBUG MODE'
@@ -137,7 +142,8 @@ def run_sim(location=None, use_calib_pars=False, screen_intvs=None,
 
     # Make arguments
     args = make_sim_parts(location=location, vaccination_coverage=vaccination_coverage, sens_analyzer=sens_analyzer,
-                          econ_analyzer=econ_analyzer, screen_intvs=screen_intvs, end=end, debug=debug)
+                          econ_analyzer=econ_analyzer, screen_intvs=screen_intvs, end=end, debug=debug,
+                          routine_vx=routine_vx, campaign_vx=campaign_vx)
     sim = make_sim(*args, datafile=f'data/{location}_data.csv')
 
     # Store metadata
